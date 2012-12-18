@@ -53,6 +53,8 @@ A file that uses this plugin would contain:
 * user.name.prop is pulled from the system properties.  The system properties always have .prop on the end
 * year is pulled from the `exta-values` defined in the project.clj
 
+To see it in action, see the [Tic Tac Toe project.clj](https://github.com/m0smith/tic-tac-toe/blob/master/project.clj)
+
 
 ## License
 
