@@ -1,5 +1,7 @@
 (defproject lein-stencil "0.1.0"
   :description "lein-stencil: a lein plugin to copy resources and apply a stencil transformation on them"
+  :license {:name "Eclipse Public License"
+            :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [stencil "0.3.1"]]
   :plugins [[lein-pprint "1.1.1"]]
