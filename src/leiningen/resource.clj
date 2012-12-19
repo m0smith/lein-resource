@@ -1,4 +1,4 @@
-(ns leiningen.stencil
+(ns leiningen.resource
   (:require [clojure.java.io :as io]
             [clojure.pprint :as pprint]
             [stencil.core :as stencil]))
@@ -54,7 +54,7 @@ destination file."  [resource-paths target-path]
   (pprint/pprint value-map)
   (flush))
 
-(defn- stencil* ""
+(defn- resource* ""
   [resource-paths target-path value-map]
       (let [files (all-file-pairs resource-paths target-path)]
         (doseq [[^java.io.File
@@ -63,15 +63,15 @@ destination file."  [resource-paths target-path]
                 s (stencil/render-string (slurp fname) value-map)]
             (io/copy s (io/file dest))))))
 
-(defn stencil
+(defn resource
   "A task that copies the files for the resource-paths to the target-path, applying stencil
 to each file allowing the files to be updated as they are copied."
   [project & keys]
   (let [{:keys [resource-paths target-path extra-values]
          :or {target-path (:target-path project)
               resource-paths nil
-              extra-values nil}} (:stencil project)]
+              extra-values nil}} (:resource project)]
     (let [value-map (merge {} project (plugin-values) (system-properties) extra-values)]
       (cond
        (first keys) (pprint value-map)
-       :else (stencil* resource-paths target-path value-map)))))
+       :else (resource* resource-paths target-path value-map)))))
