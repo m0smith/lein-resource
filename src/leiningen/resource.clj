@@ -54,18 +54,29 @@ destination file."  [resource-paths target-path]
   (pprint/pprint value-map)
   (flush))
 
+(defn ensure-directory-exists
+  "Makes sure the directory containing the file exists.
+file - a java.io.File"
+  [file]
+  (let [parent (.getParentFile file)]
+    (when-not (.isDirectory parent)
+      (.mkdirs parent))))
+
 (defn- resource* ""
   [resource-paths target-path value-map]
       (let [files (all-file-pairs resource-paths target-path)]
         (doseq [[^java.io.File
                  src dest] files]
           (let [fname (.getPath src)
-                s (stencil/render-string (slurp fname) value-map)]
-            (io/copy s (io/file dest))))))
+                s (stencil/render-string (slurp fname) value-map)
+                dest-file (io/file dest)]
+            (ensure-directory-exists dest-file)
+            (io/copy s dest-file)))))
 
 (defn resource
-  "A task that copies the files for the resource-paths to the target-path, applying stencil
-to each file allowing the files to be updated as they are copied."
+  "A task that copies the files for the resource-paths to the
+target-path, applying stencil to each file allowing the files to be
+updated as they are copied."
   [project & keys]
   (let [{:keys [resource-paths target-path extra-values]
          :or {target-path (:target-path project)

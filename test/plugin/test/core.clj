@@ -1,6 +1,18 @@
 (ns plugin.test.core
-  (:use [plugin.core])
+  (:use [leiningen.resource])
   (:use [clojure.test]))
 
-(deftest replace-me ;; FIXME: write
-  (is false "No tests have been written."))
+(def val "value")
+(def key :key)
+
+(def project
+  {
+   :resource  {:resource-paths ["test-resources/test1"]
+               :target-path "target/test1"
+               :extra-values { key val }}})
+
+(deftest test-paths
+  (resource project))
+
+(deftest test-pprint
+  (let [r (with-out-str (resource project ["pprint"]))]))
