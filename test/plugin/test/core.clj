@@ -2,14 +2,15 @@
   (:use [leiningen.resource])
   (:use [clojure.test]))
 
-(def val "value")
-(def key :key)
+(def myval "value")
+(def mykey :key)
 
 (def project
   {
    :resource  {:resource-paths ["test-resources/test1"]
                :target-path "target/test1"
-               :extra-values { key val }}})
+               :excludes [#".*~"]
+               :extra-values { mykey myval }}})
 
 (deftest test-paths
   (resource project))

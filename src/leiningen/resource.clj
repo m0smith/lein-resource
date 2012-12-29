@@ -57,32 +57,45 @@ destination file."  [resource-paths target-path]
 (defn ensure-directory-exists
   "Makes sure the directory containing the file exists.
 file - a java.io.File"
-  [file]
+  [^java.io.File file]
   (let [parent (.getParentFile file)]
     (when-not (.isDirectory parent)
       (.mkdirs parent))))
 
-(defn- resource* ""
-  [resource-paths target-path value-map]
+(defn re-matches-any [regex-seq val]
+  (first (map #(re-matches % val) regex-seq)))
+
+(defn include-file? [includes excludes fname]
+  (if (re-matches-any includes fname)
+    (if-not (re-matches-any excludes fname)
+      fname)))
+
+(defn- resource* "
+includes - a seq of regex that files must match to be included
+excludes - a seq of regex.  A file matching the regex will be excluded"
+  [resource-paths target-path value-map includes excludes]
       (let [files (all-file-pairs resource-paths target-path)]
         (doseq [[^java.io.File
                  src dest] files]
-          (let [fname (.getPath src)
-                s (stencil/render-string (slurp fname) value-map)
-                dest-file (io/file dest)]
-            (ensure-directory-exists dest-file)
-            (io/copy s dest-file)))))
+          (let [fname (.getPath src)]
+            (when (include-file? includes excludes fname)
+              (let [s (stencil/render-string (slurp fname) value-map)
+                    dest-file (io/file dest)]
+                (ensure-directory-exists dest-file)
+                (io/copy s dest-file)))))))
 
 (defn resource
   "A task that copies the files for the resource-paths to the
 target-path, applying stencil to each file allowing the files to be
 updated as they are copied."
   [project & keys]
-  (let [{:keys [resource-paths target-path extra-values]
-         :or {target-path (:target-path project)
+  (let [{:keys [resource-paths target-path extra-values excludes includes]
+         :or {excludes []
+              includes [#".*"]
+              target-path (:target-path project)
               resource-paths nil
               extra-values nil}} (:resource project)]
     (let [value-map (merge {} project (plugin-values) (system-properties) extra-values)]
       (cond
        (first keys) (pprint value-map)
-       :else (resource* resource-paths target-path value-map)))))
+       :else (resource* resource-paths target-path value-map includes excludes)))))
