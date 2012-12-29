@@ -25,6 +25,8 @@ To configure lein-resource, add to `project.clj`
     :resource {
         :resource-paths ["src-resource"] ;; required or does nothing
         :target-path "target/html"      ;; optional default to the global one
+		:includes [ #".*" ]   ;;  optional - this is the default
+		:excludes [ #".*~" ]   ;;  optional - default is no excludes which is en empty vector
         :extra-values { :year ~(.get (java.util.GregorianCalendar.)
                                          (java.util.Calendar/YEAR)) }  ;; optional - default to nil
 
