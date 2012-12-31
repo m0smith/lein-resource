@@ -14,7 +14,7 @@ that is passed to stencil contains a combination of:
 
 To use from Leiningen add to `project.clj`:
 
-      :plugins [ [lein-resource "0.2.0"] ]
+      :plugins [ [lein-resource "0.3.0"] ]
 
 To have it run before the jar file creation:
 
