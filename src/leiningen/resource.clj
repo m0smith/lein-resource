@@ -1,8 +1,19 @@
 (ns leiningen.resource
   (:require [clojure.java.io :as io]
             [clojure.pprint :as pprint]
-            [stencil.core :as stencil]))
+            [stencil.core :as stencil]
+            [leiningen.compile :as lcompile]
+            [leiningen.clean :as lclean]
+            [robert.hooke :as hooke]))
 
+;; Borrowed from https://github.com/emezeske/lein-cljsbuild/blob/master/plugin/src/leiningen/cljsbuild.clj
+
+(def ^:private lein2?
+  (try
+    (require 'leiningen.core.main)
+    true
+    (catch java.io.FileNotFoundException _
+      false)))
 
 (defn- dest-from-src
   "Change a src file to a dest file by replacing the directory"
@@ -71,20 +82,20 @@ file - a java.io.File"
       fname)))
 
 (defn- copy [src dest value-map]
-  (println "Copy " src  " to " dest)
+  (println "Copy" src "to" (str dest))
   (let [s (stencil/render-string (slurp src) value-map)]
     (ensure-directory-exists dest)
     (io/copy src dest)))
 
 (defn- clean [src ^java.io.File dest value-map]
-  (println "Remove "  dest)
+  (println "Remove "  (str dest))
   (when (.exists dest)
     (.delete dest)
     (loop [parent (.getParentFile dest)]
       (when (and parent
                  (.isDirectory parent)
                  (not (seq (.list parent))))
-        (println "Delete parent:" parent)
+        ;;(println "Delete parent:" parent)
         (when  (.delete parent)
           (recur (.getParentFile parent)))))))
 
@@ -113,8 +124,34 @@ updated as they are copied."
               extra-values nil}} (:resource project)]
     (let [value-map (merge {} project (plugin-values) (system-properties) extra-values)
           task-name (first task-keys)]
-      (println "TASK:" task-name)
+      ;;(println "TASK:" task-name)
       (cond
        (= "pprint" task-name) (pprint value-map)
        (= "clean" task-name) (resource* clean resource-paths target-path value-map includes excludes)
        :else (resource* copy resource-paths target-path value-map includes excludes)))))
+
+(defn compile-hook [task & [project & more-args :as args]]
+  (println "Copying resources...")
+  (resource project)
+  (apply task args))
+
+(defn clean-hook [task & [project & more-args :as args]]
+  (println "Removing copied resources...")
+  (resource project "clean")
+  (apply task args))
+
+;;
+;; Borrowed from https://github.com/emezeske/lein-cljsbuild/blob/master/plugin/src/leiningen/cljsbuild.clj
+
+(defn activate
+  "Set up hooks for the plugin. Eventually, this can be changed to just hook,
+and people won't have to specify :hooks in their project.clj files anymore."
+  []
+  (hooke/add-hook #'lcompile/compile #'compile-hook)
+  (hooke/add-hook #'lclean/clean #'clean-hook)
+)
+
+; Lein1 hooks have to be called manually, in lein2 the activate function will
+; be automatically called.
+;; Borrowed from https://github.com/emezeske/lein-cljsbuild/blob/master/plugin/src/leiningen/cljsbuild.clj
+(when-not lein2? (activate))
