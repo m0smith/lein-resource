@@ -20,6 +20,10 @@ To have it run before the jar file creation:
 
       :prep-tasks ["javac" "compile" "resource"]
 
+To have it run before compile and after clean:
+
+      :hooks [leiningen.resource]
+
 To configure lein-resource, add to `project.clj`
 
     :resource {
@@ -35,6 +39,10 @@ If `:resource-paths` is not set or is nil, then it won't do anything
 To see all the properties that are passed to stencil:
 
     lein resource pprint
+
+To delete all the copied files and empty directories:
+
+    lein resource clean
 
 Note that stencil/mustache uses dot notation (.) for nested maps.  For example, to get the username 
 system property use:
