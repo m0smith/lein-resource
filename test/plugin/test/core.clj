@@ -15,5 +15,9 @@
 (deftest test-paths
   (resource project))
 
+(deftest test-clean
+  (resource project "clean"))
+
 (deftest test-pprint
-  (let [r (with-out-str (resource project ["pprint"]))]))
+  (let [^String r (with-out-str (resource project "pprint"))]
+    (is (.contains r (str mykey)))))

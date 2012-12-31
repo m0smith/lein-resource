@@ -70,32 +70,51 @@ file - a java.io.File"
     (if-not (re-matches-any excludes fname)
       fname)))
 
+(defn- copy [src dest value-map]
+  (println "Copy " src  " to " dest)
+  (let [s (stencil/render-string (slurp src) value-map)]
+    (ensure-directory-exists dest)
+    (io/copy src dest)))
+
+(defn- clean [src ^java.io.File dest value-map]
+  (println "Remove "  dest)
+  (when (.exists dest)
+    (.delete dest)
+    (loop [parent (.getParentFile dest)]
+      (when (and parent
+                 (.isDirectory parent)
+                 (not (seq (.list parent))))
+        (println "Delete parent:" parent)
+        (when  (.delete parent)
+          (recur (.getParentFile parent)))))))
+
 (defn- resource* "
 includes - a seq of regex that files must match to be included
 excludes - a seq of regex.  A file matching the regex will be excluded"
-  [resource-paths target-path value-map includes excludes]
+  [task resource-paths target-path value-map includes excludes]
       (let [files (all-file-pairs resource-paths target-path)]
         (doseq [[^java.io.File
                  src dest] files]
           (let [fname (.getPath src)]
             (when (include-file? includes excludes fname)
-              (let [s (stencil/render-string (slurp fname) value-map)
-                    dest-file (io/file dest)]
-                (ensure-directory-exists dest-file)
-                (io/copy s dest-file)))))))
+              (let [^java.io.File dest-file (io/file dest)]
+                (task fname dest-file value-map)))))))
 
 (defn resource
   "A task that copies the files for the resource-paths to the
 target-path, applying stencil to each file allowing the files to be
 updated as they are copied."
-  [project & keys]
+  [project & task-keys]
   (let [{:keys [resource-paths target-path extra-values excludes includes]
          :or {excludes []
               includes [#".*"]
               target-path (:target-path project)
               resource-paths nil
               extra-values nil}} (:resource project)]
-    (let [value-map (merge {} project (plugin-values) (system-properties) extra-values)]
+    (let [value-map (merge {} project (plugin-values) (system-properties) extra-values)
+          task-name (first task-keys)]
+      (println "TASK:" task-name)
       (cond
-       (first keys) (pprint value-map)
-       :else (resource* resource-paths target-path value-map includes excludes)))))
+       (= "pprint" task-name) (pprint value-map)
+       (= "clean" task-name) (resource* clean resource-paths target-path value-map includes excludes)
+       :else (resource* copy resource-paths target-path value-map includes excludes)))))
