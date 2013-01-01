@@ -85,7 +85,7 @@ file - a java.io.File"
   (println "Copy" src "to" (str dest))
   (let [s (stencil/render-string (slurp src) value-map)]
     (ensure-directory-exists dest)
-    (io/copy src dest)))
+    (io/copy s dest)))
 
 (defn- clean [src ^java.io.File dest value-map]
   (println "Remove "  (str dest))
