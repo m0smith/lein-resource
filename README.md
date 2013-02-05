@@ -36,6 +36,12 @@ To configure lein-resource, add to `project.clj`
 
 If `:resource-paths` is not set or is nil, then it won't do anything
 
+### Calling
+
+To run to plugin directly simply enter
+
+    lein resource
+
 To see all the properties that are passed to stencil:
 
     lein resource pprint
@@ -43,6 +49,8 @@ To see all the properties that are passed to stencil:
 To delete all the copied files and empty directories:
 
     lein resource clean
+
+### Values passed to stencil
 
 Note that stencil/mustache uses dot notation (.) for nested maps.  For example, to get the username 
 system property use:
