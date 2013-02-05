@@ -36,6 +36,12 @@ To configure lein-resource, add to `project.clj`
 
 If `:resource-paths` is not set or is nil, then it won't do anything
 
+### Examples
+
+To run to plugin directly simply enter
+
+    lein resource
+
 To see all the properties that are passed to stencil:
 
     lein resource pprint
