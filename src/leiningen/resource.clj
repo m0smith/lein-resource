@@ -4,6 +4,7 @@
             [stencil.core :as stencil]
             [leiningen.compile :as lcompile]
             [leiningen.clean :as lclean]
+            [bultitude.core :as bultitude]
             [robert.hooke :as hooke]))
 
 ;; Borrowed from https://github.com/emezeske/lein-cljsbuild/blob/master/plugin/src/leiningen/cljsbuild.clj
@@ -60,7 +61,7 @@ destination file."  [resource-paths target-path]
   []
   (reduce assoc-in-from-vector {} (system-properties-seq)))
 
-(defn- pprint "Dump out the map that is passed to stencil"
+(defn pprint "Dump out the map of values passed to stencil"
   [value-map]
   (pprint/pprint value-map)
   (flush))
@@ -87,7 +88,9 @@ file - a java.io.File"
     (ensure-directory-exists dest)
     (io/copy s dest)))
 
-(defn- clean [src ^java.io.File dest value-map]
+(defn clean
+  "Remove the files created by executing the resource plugin."
+  [src ^java.io.File dest value-map]
   (println "Remove "  (str dest))
   (when (.exists dest)
     (.delete dest)
@@ -111,10 +114,29 @@ excludes - a seq of regex.  A file matching the regex will be excluded"
               (let [^java.io.File dest-file (io/file dest)]
                 (task fname dest-file value-map)))))))
 
-(defn resource
-  "A task that copies the files for the resource-paths to the
+
+(defn 
+  resource
+  "lein-resource
+
+A task that copies the files for the resource-paths to the
 target-path, applying stencil to each file allowing the files to be
-updated as they are copied."
+updated as they are copied.
+
+   lein resource - Execute the plugin to copy the files.
+   lein resource clean - Remove the files created by the plugin.
+   lein resource pprint - Dump the map of values sent to stencil.
+
+To configure the plugin,add to the project.clj:
+  :resource {
+    :resource-paths [\"src-resource\"] ;; required or does nothing
+    :target-path \"target/html\"      ;; optional default to the global one
+    :includes [ #\".*\" ]   ;;  optional - this is the default
+    :excludes [ #\".*~\" ]   ;;  optional - default is no excludes which is en empty vector
+    :extra-values { :year ~(.get (java.util.GregorianCalendar.)
+                                     (java.util.Calendar/YEAR)) }  ;; optional - default to nil
+
+"
   [project & task-keys]
   (let [{:keys [resource-paths target-path extra-values excludes includes]
          :or {excludes []
