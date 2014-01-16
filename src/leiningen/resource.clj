@@ -75,22 +75,25 @@ file - a java.io.File"
       (.mkdirs parent))))
 
 (defn re-matches-any [regex-seq val]
-  (first (map #(re-matches % val) regex-seq)))
+  (some #(re-matches % val) regex-seq))
 
 (defn include-file? [includes excludes fname]
   (if (re-matches-any includes fname)
     (if-not (re-matches-any excludes fname)
       fname)))
 
-(defn- copy [src dest value-map]
+(defn- copy [src dest value-map skip-stencil]
   (println "Copy" src "to" (str dest))
-  (let [s (stencil/render-string (slurp src) value-map)]
+  (let [s (if-not
+              skip-stencil
+              (stencil/render-string (slurp src) value-map)
+              (io/file src))]
     (ensure-directory-exists dest)
     (io/copy s dest)))
 
 (defn clean
   "Remove the files created by executing the resource plugin."
-  [src ^java.io.File dest value-map]
+  [src ^java.io.File dest & args]
   (println "Remove "  (str dest))
   (when (.exists dest)
     (.delete dest)
@@ -105,14 +108,15 @@ file - a java.io.File"
 (defn- resource* "
 includes - a seq of regex that files must match to be included
 excludes - a seq of regex.  A file matching the regex will be excluded"
-  [task resource-paths target-path value-map includes excludes]
+  [task resource-paths target-path value-map includes excludes skip-stencil]
       (let [files (all-file-pairs resource-paths target-path)]
         (doseq [[^java.io.File
                  src dest] files]
           (let [fname (.getPath src)]
             (when (include-file? includes excludes fname)
-              (let [^java.io.File dest-file (io/file dest)]
-                (task fname dest-file value-map)))))))
+              (let [^java.io.File dest-file (io/file dest)
+                    skip (re-matches-any skip-stencil fname)]
+                (task fname dest-file value-map skip)))))))
 
 
 (defn 
@@ -138,9 +142,10 @@ To configure the plugin,add to the project.clj:
 
 "
   [project & task-keys]
-  (let [{:keys [resource-paths target-path extra-values excludes includes]
+  (let [{:keys [resource-paths target-path extra-values excludes includes skip-stencil]
          :or {excludes []
               includes [#".*"]
+              skip-stencil []
               target-path (:target-path project)
               resource-paths nil
               extra-values nil}} (:resource project)]
@@ -149,8 +154,8 @@ To configure the plugin,add to the project.clj:
       ;;(println "TASK:" task-name)
       (cond
        (= "pprint" task-name) (pprint value-map)
-       (= "clean" task-name) (resource* clean resource-paths target-path value-map includes excludes)
-       :else (resource* copy resource-paths target-path value-map includes excludes)))))
+       (= "clean" task-name) (resource* clean resource-paths target-path value-map includes excludes skip-stencil)
+       :else (resource* copy resource-paths target-path value-map includes excludes skip-stencil)))))
 
 (defn compile-hook [task & [project & more-args :as args]]
   (println "Copying resources...")
