@@ -13,27 +13,29 @@ that is passed to stencil contains a combination of:
 ## Usage
 
 To use from Leiningen add to `project.clj`:
-
-      :plugins [ [lein-resource "0.3.0"] ]
-
+```clojure
+:plugins [ [lein-resource "0.3.0"] ]
+```
 To have it run before the jar file creation:
-
-      :prep-tasks ["javac" "compile" "resource"]
-
+```clojure
+:prep-tasks ["javac" "compile" "resource"]
+```
 To have it run before compile and after clean:
-
-      :hooks [leiningen.resource]
-
+```clojure
+:hooks [leiningen.resource]
+```
 To configure lein-resource, add to `project.clj`
-
-    :resource {
-        :resource-paths ["src-resource"] ;; required or does nothing
-        :target-path "target/html"      ;; optional default to the global one
-		:includes [ #".*" ]   ;;  optional - this is the default
-		:excludes [ #".*~" ]   ;;  optional - default is no excludes which is en empty vector
-        :extra-values { :year ~(.get (java.util.GregorianCalendar.)
-                                         (java.util.Calendar/YEAR)) }  ;; optional - default to nil
-
+```clojure
+:resource {
+  :resource-paths ["src-resources"] ;; required or does nothing
+  :target-path "target/html" ;; optional default to the global one
+  :includes [ #".*" ] ;; optional - this is the default
+  :excludes [ #".*~" ] ;; optional - default is no excludes which is en empty vector
+  :skip-stencil [ #"src-resources/images/.*" ] ;; optionally skip stencil processing - default is an empty vector
+  :extra-values { :year ~(.get (java.util.GregorianCalendar.)
+                                   (java.util.Calendar/YEAR)) }  ;; optional - default to nil
+}
+```
 If `:resource-paths` is not set or is nil, then it won't do anything
 
 ### Calling
