@@ -29,7 +29,8 @@ To configure lein-resource, add to `project.clj`
 :resource {
   :resource-paths ["src-resources"] ;; required or does nothing
   :target-path "target/html" ;; optional default to the global one
-  :includes [ #".*" ] ;; optional - this is the default
+  :update   false      ;; if true only process files with src newer than dest
+  :includes [ #".*" ]  ;; optional - this is the default
   :excludes [ #".*~" ] ;; optional - default is no excludes which is en empty vector
   :skip-stencil [ #"src-resources/images/.*" ] ;; optionally skip stencil processing - default is an empty vector
   :extra-values { :year ~(.get (java.util.GregorianCalendar.)
