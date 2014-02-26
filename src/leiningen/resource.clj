@@ -82,14 +82,27 @@ file - a java.io.File"
     (if-not (re-matches-any excludes fname)
       fname)))
 
-(defn- copy [src dest value-map skip-stencil]
-  (println "Copy" src "to" (str dest))
-  (let [s (if-not
-              skip-stencil
-              (stencil/render-string (slurp src) value-map)
-              (io/file src))]
-    (ensure-directory-exists dest)
-    (io/copy s dest)))
+(defn copy [src dest-file value-map skip-stencil update src-file]
+  "Copy src to dest-file unless update is true and src is older than dest. When skip-stencil is true, do not process the file using stencil.
+
+Return: 
+    nil - no file copied due to update being set and the src older
+          than the dest 
+   [src-file dest-file] - when the file was copied
+"
+  (println "Copy" src "to" (str dest-file))
+  (let [dest-ts (.lastModified dest-file)
+        src-ts (.lastModified src-file)]
+    ;(println "update:" update " dest-ts:" dest-ts " src-ts:" src-ts)
+    (when (or (not update)
+              (and update (<  dest-ts src-ts)))
+      ;(println "copying")
+      (let [s (if-not skip-stencil
+                (stencil/render-string (slurp src) value-map)
+                (io/file src))]
+        (ensure-directory-exists dest-file)
+        (io/copy s dest-file)
+        [src-file dest-file]))))
 
 (defn clean
   "Remove the files created by executing the resource plugin."
@@ -108,15 +121,14 @@ file - a java.io.File"
 (defn- resource* "
 includes - a seq of regex that files must match to be included
 excludes - a seq of regex.  A file matching the regex will be excluded"
-  [task resource-paths target-path value-map includes excludes skip-stencil]
+  [task resource-paths target-path value-map includes excludes skip-stencil update]
       (let [files (all-file-pairs resource-paths target-path)]
-        (doseq [[^java.io.File
-                 src dest] files]
+        (doseq [[^java.io.File src dest] files]
           (let [fname (.getPath src)]
             (when (include-file? includes excludes fname)
               (let [^java.io.File dest-file (io/file dest)
                     skip (re-matches-any skip-stencil fname)]
-                (task fname dest-file value-map skip)))))))
+                (task fname dest-file value-map skip update src)))))))
 
 
 (defn 
@@ -135,6 +147,7 @@ To configure the plugin,add to the project.clj:
   :resource {
     :resource-paths [\"src-resource\"] ;; required or does nothing
     :target-path \"target/html\"      ;; optional default to the global one
+    :update false           ;;  When true, only copy files where src is newer than default
     :includes [ #\".*\" ]   ;;  optional - this is the default
     :excludes [ #\".*~\" ]   ;;  optional - default is no excludes which is en empty vector
     :extra-values { :year ~(.get (java.util.GregorianCalendar.)
@@ -142,8 +155,10 @@ To configure the plugin,add to the project.clj:
 
 "
   [project & task-keys]
-  (let [{:keys [resource-paths target-path extra-values excludes includes skip-stencil]
-         :or {excludes []
+  (let [{:keys [resource-paths target-path extra-values excludes includes 
+                skip-stencil update]
+         :or {update false
+              excludes []
               includes [#".*"]
               skip-stencil []
               target-path (:target-path project)
@@ -154,8 +169,8 @@ To configure the plugin,add to the project.clj:
       ;;(println "TASK:" task-name)
       (cond
        (= "pprint" task-name) (pprint value-map)
-       (= "clean" task-name) (resource* clean resource-paths target-path value-map includes excludes skip-stencil)
-       :else (resource* copy resource-paths target-path value-map includes excludes skip-stencil)))))
+       (= "clean" task-name) (resource* clean resource-paths target-path value-map includes excludes skip-stencil update)
+       :else (resource* copy resource-paths target-path value-map includes excludes skip-stencil update)))))
 
 (defn compile-hook [task & [project & more-args :as args]]
   (println "Copying resources...")
