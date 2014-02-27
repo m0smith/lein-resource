@@ -90,13 +90,12 @@ Return:
           than the dest 
    [src-file dest-file] - when the file was copied
 "
-  (println "Copy" src "to" (str dest-file))
   (let [dest-ts (.lastModified dest-file)
         src-ts (.lastModified src-file)]
     ;(println "update:" update " dest-ts:" dest-ts " src-ts:" src-ts)
     (when (or (not update)
               (and update (<  dest-ts src-ts)))
-      ;(println "copying")
+      (println "Copy" src "to" (str dest-file))
       (let [s (if-not skip-stencil
                 (stencil/render-string (slurp src) value-map)
                 (io/file src))]
