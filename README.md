@@ -14,7 +14,7 @@ that is passed to stencil contains a combination of:
 
 To use from Leiningen add to `project.clj`:
 ```clojure
-:plugins [ [lein-resource "0.3.5"] ]
+:plugins [ [lein-resource "0.3.6"] ]
 ```
 To have it run before the jar file creation:
 ```clojure

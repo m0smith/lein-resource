@@ -1,4 +1,4 @@
-(defproject lein-resource "0.3.5"
+(defproject lein-resource "0.3.6"
   :description "lein-resource: a lein plugin to copy resources and apply a stencil transformation on them"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
