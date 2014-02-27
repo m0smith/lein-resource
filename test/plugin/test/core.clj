@@ -33,6 +33,7 @@
         src (.getPath src-file)
         now (java.util.Date.)]
     (resource project-update "clean")
+    (ensure-directory-exists dest-file2)
     (spit dest-file2 now)
     (is (= [src-file dest-file] (copy src dest-file value-map skip-stencil update src-file)))
     (is (not (copy src dest-file2 value-map skip-stencil update src-file)))
