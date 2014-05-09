@@ -3,7 +3,8 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.5.0"]
-                 [bultitude "0.2.4"]
+                 [bultitude "0.2.4"]  ;; namespace finder
+                 [org.clojure/test.check "0.5.7"] ;; property testing
                  [stencil "0.3.3"]]
   :plugins [[lein-pprint "1.1.1"]]
   :scm {:url "git@github.com:m0smith/lein-resource.git"}
