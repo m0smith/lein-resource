@@ -25,7 +25,7 @@
         fname (if (#{\/} (first fnamex)) (subs fnamex 1) fnamex)]
     (io/file dest-path fname)))
 
-(defn- all-file-pairs
+(defn all-file-pairs
   "Take the directories mentioned in 'resource-paths' and get all the
 files in those directories as a seq.  Return a seq of 2 element
 vectors. The first is the source file and the second is the
