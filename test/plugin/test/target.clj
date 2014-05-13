@@ -5,6 +5,25 @@
             [leiningen.resource :as r]
             [clojure.java.io :as io]))
 
+
+(defn tree
+
+  "Usage:
+      (gen/sample (gen/sized tree))
+      (gen/sample (gen/sized (partial tree gen/int)))"
+
+  ([size] (tree gen/string-alpha-numeric size))
+  ([leaf-gen size]
+     (if (= size 0)
+       leaf-gen
+       (let [new-size (quot size 2)
+             smaller-tree (gen/resize new-size (gen/sized tree))]
+         (gen/one-of ;; choose either a leaf, or a node
+          [leaf-gen
+           (gen/tuple leaf-gen
+                      (gen/one-of [(gen/return nil) smaller-tree])
+                      (gen/one-of [(gen/return nil) smaller-tree]))])))))
+
 (def sort-idempotent-prop
   (prop/for-all [v (gen/vector gen/int)]
                 (= (sort v) (sort (sort v)))))
