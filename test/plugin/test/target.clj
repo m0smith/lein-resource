@@ -12,12 +12,12 @@
       (gen/sample (gen/sized tree))
       (gen/sample (gen/sized (partial tree gen/int)))"
 
-  ([size] (tree gen/string-alpha-numeric size))
+  ([size] (tree (gen/list  gen/string-alpha-numeric) size))
   ([leaf-gen size]
      (if (= size 0)
        leaf-gen
        (let [new-size (quot size 2)
-             smaller-tree (gen/resize new-size (gen/sized tree))]
+             smaller-tree (gen/resize new-size (gen/sized (partial  tree leaf-gen)))]
          (gen/one-of ;; choose either a leaf, or a node
           [leaf-gen
            (gen/tuple leaf-gen
