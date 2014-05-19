@@ -6,6 +6,23 @@
             [clojure.java.io :as io]))
 
 
+(defn dirs [size]
+  "
+    [name [files] (sub-dirs)]
+   "
+
+  (cond
+   (= size 0) (gen/tuple gen/string-alpha-numeric  
+                         (gen/not-empty (gen/vector gen/string-alpha-numeric))
+                         (gen/return (list)))
+   :else (gen/tuple gen/string-alpha-numeric  
+                    (gen/not-empty (gen/vector gen/string-alpha-numeric))
+                    (gen/list (gen/resize (dec size) (gen/sized dirs))))))
+
+
+;;;   :else (gen/tuple (gen/not-empty (gen/vector gen/string-alpha-numeric)) (gen/resize (dec size) (gen/sized dirs)))))
+
+
 (defn tree
 
   "Usage:
