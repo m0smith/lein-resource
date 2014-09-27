@@ -130,29 +130,8 @@ excludes - a seq of regex.  A file matching the regex will be excluded"
                 (task fname dest-file value-map skip update src)))))))
 
 
-(defn 
-  resource
-  "lein-resource
-
-A task that copies the files for the resource-paths to the
-target-path, applying stencil to each file allowing the files to be
-updated as they are copied.
-
-   lein resource - Execute the plugin to copy the files.
-   lein resource clean - Remove the files created by the plugin.
-   lein resource pprint - Dump the map of values sent to stencil.
-
-To configure the plugin,add to the project.clj:
-  :resource {
-    :resource-paths [\"src-resource\"] ;; required or does nothing
-    :target-path \"target/html\"      ;; optional default to the global one
-    :update false           ;;  When true, only copy files where src is newer than default
-    :includes [ #\".*\" ]   ;;  optional - this is the default
-    :excludes [ #\".*~\" ]   ;;  optional - default is no excludes which is en empty vector
-    :extra-values { :year ~(.get (java.util.GregorianCalendar.)
-                                     (java.util.Calendar/YEAR)) }  ;; optional - default to nil
-
-"
+(defn   resource
+  "Task name can also be pprint or clean"
   [project & task-keys]
   (let [{:keys [resource-paths target-path extra-values excludes includes 
                 skip-stencil update]

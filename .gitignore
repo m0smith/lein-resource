@@ -9,4 +9,6 @@
 *~
 /target
 .lein-plugins
+.nrepl-port
+
 
