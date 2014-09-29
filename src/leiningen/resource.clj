@@ -35,10 +35,10 @@ Return a seq of 3 element vectors.
   The third is the resource-path"
 
   [resource-paths target-path]
-  (for [[source-path options] resource-paths
+  (for [[source-path options :as resource-path] resource-paths
         ^java.io.File file (file-seq (io/file source-path))
         :when (.isFile file)]
-    [file (dest-from-src source-path target-path file) source-path]))
+    [file (dest-from-src source-path target-path file) resource-path]))
 
 
 (defn- plugin-values
@@ -79,7 +79,7 @@ file - a java.io.File"
   (some #(re-matches % val) regex-seq))
 
 (defn include-file? [includes excludes fname]
-  (println "include-file?: " includes excludes fname)
+  ;(println "include-file?: " includes excludes fname)
   (if (re-matches-any includes fname)
     (if-not (re-matches-any excludes fname)
       fname)))
@@ -93,7 +93,7 @@ Return:
    [src-file dest-file] - when the file was copied
 "
   [src dest-file value-map skip-stencil update src-file]
-  (println src dest-file value-map skip-stencil update src-file )
+  ;(println src dest-file value-map skip-stencil update src-file )
   (if (not (.exists src-file))
     (println "Missing source file:" src)
     (let [dest-ts (.lastModified dest-file)
@@ -107,7 +107,7 @@ Return:
                   (io/file src))]
           (ensure-directory-exists dest-file)
           (io/copy s dest-file)
-          (println "hhhhh" s src-file dest-file)
+          ;(println "hhhhh" s src-file dest-file)
           [src-file dest-file])))))
   
 (defn clean
@@ -136,6 +136,7 @@ includes - a seq of regex that files must match to be included
 excludes - a seq of regex.  A file matching the regex will be excluded"
   [task resource-paths target-path value-map def-includes def-excludes skip-stencil update]
       (let [files (all-file-pairs resource-paths target-path)]
+        ;(println "resource*: files:" files)
         (doseq [[^java.io.File src dest [_ {:keys [includes excludes]}]] files]
           (let [fname (.getPath src)]
             (when (include-file? includes excludes fname)
