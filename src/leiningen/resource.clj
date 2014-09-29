@@ -36,9 +36,9 @@ Return a seq of 3 element vectors.
 
   [resource-paths target-path]
   (for [[source-path options] resource-paths
-        ^java.io.File file (file-seq (io/file resource-path))
+        ^java.io.File file (file-seq (io/file source-path))
         :when (.isFile file)]
-    [file (dest-from-src resource-path target-path file) resource-path]))
+    [file (dest-from-src source-path target-path file) source-path]))
 
 
 (defn- plugin-values
@@ -79,6 +79,7 @@ file - a java.io.File"
   (some #(re-matches % val) regex-seq))
 
 (defn include-file? [includes excludes fname]
+  (println "include-file?: " includes excludes fname)
   (if (re-matches-any includes fname)
     (if-not (re-matches-any excludes fname)
       fname)))
@@ -92,19 +93,23 @@ Return:
    [src-file dest-file] - when the file was copied
 "
   [src dest-file value-map skip-stencil update src-file]
-  (let [dest-ts (.lastModified dest-file)
-        src-ts (.lastModified src-file)]
-    ;(println "update:" update " dest-ts:" dest-ts " src-ts:" src-ts)
-    (when (or (not update)
-              (and update (<  dest-ts src-ts)))
-      (println "Copy" src "to" (str dest-file))
-      (let [s (if-not skip-stencil
-                (stencil/render-string (slurp src) value-map)
-                (io/file src))]
-        (ensure-directory-exists dest-file)
-        (io/copy s dest-file)
-        [src-file dest-file]))))
-
+  (println src dest-file value-map skip-stencil update src-file )
+  (if (not (.exists src-file))
+    (println "Missing source file:" src)
+    (let [dest-ts (.lastModified dest-file)
+          src-ts (.lastModified src-file)]
+      ;(println "update:" update " dest-ts:" dest-ts " src-ts:" src-ts)
+      (when (or (not update)
+                (and update (<  dest-ts src-ts)))
+        (println "Copy" src "to" (str dest-file))
+        (let [s (if-not skip-stencil
+                  (stencil/render-string (slurp src) value-map)
+                  (io/file src))]
+          (ensure-directory-exists dest-file)
+          (io/copy s dest-file)
+          (println "hhhhh" s src-file dest-file)
+          [src-file dest-file])))))
+  
 (defn clean
   "Remove the files created by executing the resource plugin."
   [src ^java.io.File dest & args]
