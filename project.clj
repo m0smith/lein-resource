@@ -55,6 +55,17 @@ To configure the plugin,add to the project.clj:
            { :year 
              ~(.get (java.util.GregorianCalendar.)
                     (java.util.Calendar/YEAR)) }  
+## Links
+
+### Marginalia
+
+[Marginalia](http://gdeer81.github.io/marginalia)
+[Markdown](http://daringfireball.net/projects/markdown/syntax)
+[MathJax](http://www.mathjax.org/)     
+
+### test.check
+[test.check](https://github.com/clojure/test.check)
+
 "
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}

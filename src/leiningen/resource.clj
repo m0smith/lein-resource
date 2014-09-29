@@ -27,13 +27,19 @@
 
 (defn all-file-pairs
   "Take the directories mentioned in 'resource-paths' and get all the
-files in those directories as a seq.  Return a seq of 2 element
-vectors. The first is the source file and the second is the
-destination file."  [resource-paths target-path]
-  (for [resource-path resource-paths
+files in those directories as a seq.  
+
+Return a seq of 3 element vectors. 
+  The first is the source file and
+  The second is the destination file.
+  The third is the resource-path"
+
+  [resource-paths target-path]
+  (for [[source-path options] resource-paths
         ^java.io.File file (file-seq (io/file resource-path))
         :when (.isFile file)]
-    [file (dest-from-src resource-path target-path file)]))
+    [file (dest-from-src resource-path target-path file) resource-path]))
+
 
 (defn- plugin-values
   "Additional value available to the stencil renderer"
@@ -61,11 +67,6 @@ destination file."  [resource-paths target-path]
   []
   (reduce assoc-in-from-vector {} (system-properties-seq)))
 
-(defn pprint "Dump out the map of values passed to stencil"
-  [value-map]
-  (pprint/pprint value-map)
-  (flush))
-
 (defn ensure-directory-exists
   "Makes sure the directory containing the file exists.
 file - a java.io.File"
@@ -82,7 +83,7 @@ file - a java.io.File"
     (if-not (re-matches-any excludes fname)
       fname)))
 
-(defn copy [src dest-file value-map skip-stencil update src-file]
+(defn copy 
   "Copy src to dest-file unless update is true and src is older than dest. When skip-stencil is true, do not process the file using stencil.
 
 Return: 
@@ -90,6 +91,7 @@ Return:
           than the dest 
    [src-file dest-file] - when the file was copied
 "
+  [src dest-file value-map skip-stencil update src-file]
   (let [dest-ts (.lastModified dest-file)
         src-ts (.lastModified src-file)]
     ;(println "update:" update " dest-ts:" dest-ts " src-ts:" src-ts)
@@ -117,12 +119,19 @@ Return:
         (when  (.delete parent)
           (recur (.getParentFile parent)))))))
 
+(defn pprint 
+  "Dump out the map of values passed to stencil"
+  [value-map]
+  (pprint/pprint value-map)
+  (flush))
+
+
 (defn- resource* "
 includes - a seq of regex that files must match to be included
 excludes - a seq of regex.  A file matching the regex will be excluded"
-  [task resource-paths target-path value-map includes excludes skip-stencil update]
+  [task resource-paths target-path value-map def-includes def-excludes skip-stencil update]
       (let [files (all-file-pairs resource-paths target-path)]
-        (doseq [[^java.io.File src dest] files]
+        (doseq [[^java.io.File src dest [_ {:keys [includes excludes]}]] files]
           (let [fname (.getPath src)]
             (when (include-file? includes excludes fname)
               (let [^java.io.File dest-file (io/file dest)
@@ -130,7 +139,24 @@ excludes - a seq of regex.  A file matching the regex will be excluded"
                 (task fname dest-file value-map skip update src)))))))
 
 
-(defn   resource
+;; A resource path is either a string `src` or a pair
+;;
+;;    [ "src" {:includes [] :excludes [] :target-path "target"} ]
+
+(defn normalize-resource-paths 
+  "Resource paths can be passed as strings or as vectors of 2
+  elements: the source path and the options.  Convert the former to the latter."
+  [resource-paths includes excludes target-path]
+  (let [default-options {:includes includes :excludes excludes :target-path target-path}]
+    (for [resource-path resource-paths]
+      (let [resource-path (if (string? resource-path) 
+                            [ resource-path {} ]
+                            resource-path)
+            [source-path options] resource-path]
+        [source-path (merge default-options options)]))))
+
+
+(defn resource
   "Task name can also be pprint or clean"
   [project & task-keys]
   (let [{:keys [resource-paths target-path extra-values excludes includes 
@@ -143,7 +169,8 @@ excludes - a seq of regex.  A file matching the regex will be excluded"
               resource-paths nil
               extra-values nil}} (:resource project)]
     (let [value-map (merge {} project (plugin-values) (system-properties) extra-values)
-          task-name (first task-keys)]
+          task-name (first task-keys)
+          resource-paths (normalize-resource-paths resource-paths includes excludes target-path)]
       ;;(println "TASK:" task-name)
       (cond
        (= "pprint" task-name) (pprint value-map)
