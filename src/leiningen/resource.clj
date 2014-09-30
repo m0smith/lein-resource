@@ -53,14 +53,6 @@
   []
   (reduce assoc-in-from-vector {} (system-properties-seq)))
 
-(defn ensure-directory-exists
-  "Makes sure the directory containing the file exists.
-file - a java.io.File"
-  [^java.io.File file]
-  (let [parent (.getParentFile file)]
-    (when-not (.isDirectory parent)
-      (.mkdirs parent))))
-
 (defn re-matches-any [regex-seq val]
   (some #(re-matches % val) regex-seq))
 
@@ -85,7 +77,7 @@ Return:
         (let [s (if-not skip-stencil
                   (stencil/render-string (slurp src) value-map)
                   (io/file src))]
-          (ensure-directory-exists dest-file)
+          (io/make-parents dest-file)
           (io/copy s dest-file)
           ;(println "hhhhh" s src-file dest-file)
           [src-file dest-file])))))

@@ -21,9 +21,20 @@
 (def gen-resource-path (gen/tuple gen-source-path gen-options))
 (def gen-resource-paths (gen/list (gen/one-of [gen-source-path gen-resource-path])))
 
+;; [src src-file dest resource-path]
+(def gen-file-spec (gen/fmap (fn [m] (merge m {:src-file (java.io.File. (:src m))}))
+                             (gen/hash-map :src gen-source-path
+                                           :dest gen-target-path
+                                           :resource-path gen-resource-path)))
+
 (def gen-nomalize 
   (gen/fmap (fn [args] [(apply normalize-resource-paths args) args])
             (gen/tuple gen-resource-paths gen-includes gen-excludes gen-target-path)))
+
+
+(def gen-include-file? 
+  (gen/fmap (fn [args] [(apply include-file? args) args])
+            (gen/tuple gen-file-spec)))
 
 
 ;; ## Properties
@@ -35,6 +46,12 @@
                         (map (fn [[new-path] path]
                                (= (if (string? path) path (first path)) new-path))
                              paths source-paths))))
+
+
+(ct/defspec test-include-file? 100
+  (prop/for-all [[rtnval [source-path resource-path]] gen-include-file?]
+                (println rtnval source-path resource-path)))
+  
                                   
                   
                 
