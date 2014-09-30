@@ -59,5 +59,5 @@
                                                          gen/string-alpha-numeric )]
                   (println "v=" v)
                   (println (map #(dir-tree-seq % true false) f))
-                  (nil? (println f b (apply r/all-file-pairs v))))))
+                  (nil? (println f b (apply r/all-file-specs v))))))
                 

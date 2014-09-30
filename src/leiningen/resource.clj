@@ -25,20 +25,6 @@
         fname (if (#{\/} (first fnamex)) (subs fnamex 1) fnamex)]
     (io/file dest-path fname)))
 
-(defn all-file-pairs
-  "Take the directories mentioned in 'resource-paths' and get all the
-files in those directories as a seq.  
-
-Return a seq of 3 element vectors. 
-  The first is the source file and
-  The second is the destination file.
-  The third is the resource-path"
-
-  [resource-paths target-path]
-  (for [[source-path options :as resource-path] resource-paths
-        ^java.io.File file (file-seq (io/file source-path))
-        :when (.isFile file)]
-    [file (dest-from-src source-path target-path file) resource-path]))
 
 
 (defn- plugin-values
@@ -77,12 +63,6 @@ file - a java.io.File"
 
 (defn re-matches-any [regex-seq val]
   (some #(re-matches % val) regex-seq))
-
-(defn include-file? [includes excludes fname]
-  ;(println "include-file?: " includes excludes fname)
-  (if (re-matches-any includes fname)
-    (if-not (re-matches-any excludes fname)
-      fname)))
 
 (defn copy 
   "Copy src to dest-file unless update is true and src is older than dest. When skip-stencil is true, do not process the file using stencil.
@@ -130,19 +110,53 @@ Return:
   (pprint/pprint value-map)
   (flush))
 
+;; ## FileSpec
+;; src - the source file as a string
+;; src-file - the source file as a File
+;; dest - the destination of the file
+;; resource-path [ source-spec option]
 
-(defn- resource* "
-includes - a seq of regex that files must match to be included
-excludes - a seq of regex.  A file matching the regex will be excluded"
+(defrecord FileSpec [src src-file dest resource-path])
+
+(defn include-file? 
+  "Take a FileSpec and check if that file should be included"
+[{:keys [src resource-path]}]
+  (let [ [_ {:keys [includes excludes]}] resource-path]
+    ;(println "include-file?: " includes excludes fname)
+    (if (re-matches-any includes src)
+      (if-not (re-matches-any excludes src)
+        src))))
+
+
+(defn all-file-specs
+  "Take the directories mentioned in 'resource-paths' and get all the
+files in those directories as a seq.  
+
+Return a seq of 3 element vectors. 
+  The first is the source file and
+  The second is the destination file.
+  The third is the resource-path"
+
+  [resource-paths target-path]
+  (for [[source-path options :as resource-path] resource-paths
+        ^java.io.File file (file-seq (io/file source-path))
+        :when (.isFile file)]
+    (FileSpec.  (.getPath file) file (dest-from-src source-path target-path file) resource-path)))
+
+
+(defn- resource* 
+  "
+  includes - a seq of regex that files must match to be included
+  excludes - a seq of regex.  A file matching the regex will be excluded"
   [task resource-paths target-path value-map def-includes def-excludes skip-stencil update]
-      (let [files (all-file-pairs resource-paths target-path)]
+      (let [file-specs (all-file-specs resource-paths target-path)]
         ;(println "resource*: files:" files)
-        (doseq [[^java.io.File src dest [_ {:keys [includes excludes]}]] files]
-          (let [fname (.getPath src)]
-            (when (include-file? includes excludes fname)
-              (let [^java.io.File dest-file (io/file dest)
-                    skip (re-matches-any skip-stencil fname)]
-                (task fname dest-file value-map skip update src)))))))
+        (doseq [file-spec file-specs]
+          (when (include-file? file-spec)
+            ;(println "resource*: file-spec:" file-spec)
+            (let [^java.io.File dest-file (io/file (:dest file-spec))
+                  skip (re-matches-any skip-stencil (:src file-spec))]
+              (task (:src file-spec) dest-file value-map skip update (:src-file file-spec)))))))
 
 
 ;; A resource path is either a string `src` or a pair
@@ -204,7 +218,9 @@ and people won't have to specify :hooks in their project.clj files anymore."
   (hooke/add-hook #'lclean/clean #'clean-hook)
 )
 
-; Lein1 hooks have to be called manually, in lein2 the activate function will
-; be automatically called.
+;; Lein1 hooks have to be called manually, in lein2 the activate function will
+;; be automatically called.
 ;; Borrowed from https://github.com/emezeske/lein-cljsbuild/blob/master/plugin/src/leiningen/cljsbuild.clj
 (when-not lein2? (activate))
+
+(def end-of-file true)
