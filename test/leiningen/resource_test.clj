@@ -1,4 +1,5 @@
 (ns leiningen.resource-test
+  (:import [leiningen.resource.FileSpec])
   (:require [clojure.test :refer :all]
             [clojure.test.check :as tc]
             [clojure.test.check.clojure-test :as ct]
@@ -26,7 +27,7 @@
 (def gen-includes (gen/one-of [(gen/tuple (gen/return #"^.*$")) 
                                (gen/list gen-regex)]))
 (def gen-excludes (gen/one-of [(gen/return nil) (gen/list gen-regex)]))
-(def gen-target-path gen/string-ascii)
+
 
 ;; ## Generate a Source Tree
 ;; * a sub-directory of target/lein-resource/tmp
@@ -83,8 +84,7 @@
                                    :target-path gen-dest-tree-root)))
 
 (def gen-resource-path-od (gen/tuple gen-source-tree gen-options-od))
-(def gen-resource-paths-od (gen/list 
-                            (gen/one-of [gen-source-tree gen-resource-path-od])))
+(def gen-resource-paths-od (gen/list gen-resource-path-od))
 
 
 ;; ## Project Info
@@ -116,12 +116,19 @@
 
 ;;  FileSpec [src src-file dest resource-path dest-file skip])
 ;;
-(def gen-file-spec (gen/fmap (fn [m] (merge m {:src-file (java.io.File. (:src m))}))
-                             (gen/hash-map :src gen-source-path
-                                           :dest gen-target-path
-                                           :resource-path gen-resource-path)))
+(def gen-file-spec 
+  (gen/fmap (fn [[src resource-path skip]] 
+              (let [src-file (io/file src)
+                    [_ {:keys [target-path]}] resource-path
+                    dest target-path
+                    dest-file (io/file dest)
+                    ]
+                (->FileSpec src src-file dest resource-path dest-file skip)))
+            (gen/tuple gen-source-path 
+                       gen-resource-path
+                       gen-skip-stencil)))
 
-(def gen-nomalize 
+(def gen-normalize 
   (gen/fmap (fn [args] [(apply normalize-resource-paths args) args])
             (gen/tuple gen-resource-paths gen-includes gen-excludes gen-target-path)))
 
@@ -134,12 +141,28 @@
 ;; ## normalize-resource-paths
 ;; The output is a seq of [ src options ]
 
+(defn source-path-from-raw-resource-path [resource-path]
+  (if (string? resource-path) 
+    resource-path 
+    (first resource-path)) )
+
+(defn target-path? [resource-path raw-resource-path default-target-path]
+  (let [target-path (-> resource-path second :target-path)
+        raw-target-path (-> raw-resource-path second :target-path)]
+    (if raw-target-path
+      (is (= target-path raw-target-path))
+      (is (= target-path default-target-path)))))
+
 (ct/defspec test-normalize-resource-paths 50
-  (prop/for-all [[paths [source-paths & args]] gen-nomalize]
-                (every? identity 
-                        (map (fn [[new-path] path]
-                               (= (if (string? path) path (first path)) new-path))
-                             paths source-paths))))
+  (prop/for-all [[resource-paths [raw-resource-paths include excludes target-path]] gen-normalize]
+                (every? identity
+                 (map (fn [rp raw-rp]
+                        (and 
+                         (is (first rp))
+                         (target-path? rp raw-rp target-path)
+                         (is (= (first rp) (source-path-from-raw-resource-path raw-rp)))))
+                      
+                      resource-paths raw-resource-paths))))
 
 ;; ## dest-from-src
 ;; The result will have duplicate / removed as well as a trailing / 
@@ -170,8 +193,6 @@
 ;; * A non-nil means the source does not match an include
 ;; * A nil return could either be a no includes match or an exlcude matches
 
-
-
 (def gen-include-file? 
   (gen/fmap (fn [args] [(apply include-file? args) args])
             (gen/tuple gen-file-spec)))
@@ -186,4 +207,26 @@
                     (is (or (not (re-matches-any includes src))
                             (re-matches-any excludes src)))))))
                              
+;; ## all-file-specs
+;; It returns a seq of FileSpec
 
+(defn file-spec-consistant? [{:keys[src src-file dest dest-file resource-path] :as file-spec}]
+  (let [[source-path {:keys[target-path] :as options}] resource-path]
+    (and
+     (is (= src-file (io/file src)))
+     (is (string? src))
+     (is (string? dest))
+     (is (instance? java.io.File src-file))
+     (is (instance? java.io.File dest-file))
+     (is (.startsWith src source-path))
+     (is (.startsWith  dest target-path))
+     )))
+
+(def gen-all-file-specs
+  (gen/fmap (fn [args] [(apply all-file-specs args) args])
+            (gen/tuple gen-resource-paths-od)))
+
+(ct/defspec test-all-file-specs 50
+  (prop/for-all [[rtnval [args]] gen-all-file-specs]
+                (is (every? #(instance? leiningen.resource.FileSpec %) rtnval))
+                (every? file-spec-consistant?  rtnval)))

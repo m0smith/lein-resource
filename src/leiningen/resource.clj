@@ -130,16 +130,15 @@ Return:
   "Take the directories mentioned in 'resource-paths' and get all the
 files in those directories as a seq.  
 
-Return a seq of 3 element vectors. 
-  The first is the source file and
-  The second is the destination file.
-  The third is the resource-path"
+Return a FileSpec"
 
-  [resource-paths target-path]
-  (for [[source-path options :as resource-path] resource-paths
+  [resource-paths]
+  (for [[source-path {:keys [target-path]} :as resource-path] resource-paths
         ^java.io.File file (file-seq (io/file source-path))
         :when (.isFile file)]
-    (FileSpec.  (.getPath file) file (dest-from-src source-path target-path file) resource-path nil false)))
+    (let [dest-file (dest-from-src source-path target-path file)
+          dest (.getPath dest-file)]
+      (FileSpec.  (.getPath file) file dest resource-path dest-file false))))
 
 
 (defn- resource* 
@@ -147,7 +146,7 @@ Return a seq of 3 element vectors.
   includes - a seq of regex that files must match to be included
   excludes - a seq of regex.  A file matching the regex will be excluded"
   [task resource-paths target-path value-map def-includes def-excludes skip-stencil update]
-      (let [file-specs (all-file-specs resource-paths target-path)]
+      (let [file-specs (all-file-specs resource-paths)]
         ;(println "resource*: files:" files)
         (doseq [file-spec file-specs]
           (when (include-file? file-spec)
@@ -179,15 +178,15 @@ Return a seq of 3 element vectors.
 
 
 (defn update-file-spec [skip-stencil {:keys[ src dest] :as file-spec}]
-  (let[ dest-file (io/file dest)
+  (let[ 
        skip (re-matches-any skip-stencil src)]
-    (assoc file-spec :dest-file dest-file :skip skip)))
+    (assoc file-spec  :skip skip)))
 
 ;; ## file spec seq
 ;; Take in a `ProjectInfo` and return a seq of `FileSpec`
 
 (defn file-spec-seq [{:keys [resource-paths target-path skip-stencil] :as project-info}]
-  (->> (all-file-specs resource-paths target-path)
+  (->> (all-file-specs resource-paths)
        (filter include-file?)
        (map (partial update-file-spec skip-stencil))))
 
