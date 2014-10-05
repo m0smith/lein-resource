@@ -16,8 +16,10 @@
     (catch java.io.FileNotFoundException _
       false)))
 
-(defn- dest-from-src
-  "Change a src file to a dest file by replacing the directory"
+(defn dest-from-src
+  "Change a src file to a dest file by replacing the directory.  
+
+  Returns the destination file name as a `File`"
   [src-path dest-path ^java.io.File f]
   (let [s (count src-path)
         src (.getPath f)
@@ -82,7 +84,7 @@ Return:
           ;(println "hhhhh" s src-file dest-file)
           [src-file dest-file])))))
   
-(defn clean
+(defn cleanxxx
   "Remove the files created by executing the resource plugin."
   [src ^java.io.File dest & args]
   (println "Remove "  (str dest))
@@ -107,8 +109,10 @@ Return:
 ;; src-file - the source file as a File
 ;; dest - the destination of the file
 ;; resource-path [ source-spec option]
+;; dest-file - dest as a File 
+;; skip - if true, do not pass the file through stencil
 
-(defrecord FileSpec [src src-file dest resource-path])
+(defrecord FileSpec [src src-file dest resource-path dest-file skip])
 
 (defn include-file? 
   "Take a FileSpec and check if that file should be included"
@@ -133,7 +137,7 @@ Return a seq of 3 element vectors.
   (for [[source-path options :as resource-path] resource-paths
         ^java.io.File file (file-seq (io/file source-path))
         :when (.isFile file)]
-    (FileSpec.  (.getPath file) file (dest-from-src source-path target-path file) resource-path)))
+    (FileSpec.  (.getPath file) file (dest-from-src source-path target-path file) resource-path nil false)))
 
 
 (defn- resource* 
@@ -168,6 +172,51 @@ Return a seq of 3 element vectors.
         [source-path (merge default-options options)]))))
 
 
+(defrecord ProjectInfo [resource-paths target-path value-map includes excludes skip-stencil update])
+
+
+
+(defn update-file-spec [skip-stencil {:keys[ src dest] :as file-spec}]
+  (let[ dest-file (io/file dest)
+       skip (re-matches-any skip-stencil src)]
+    (assoc file-spec :dest-file dest-file :skip skip)))
+
+;; ## file spec seq
+;; Take in a `ProjectInfo` and return a seq of `FileSpec`
+
+(defn file-spec-seq [{:keys [resource-paths target-path skip-stencil] :as project-info}]
+  (->> (all-file-specs resource-paths target-path)
+       (filter include-file?)
+       (map (partial update-file-spec skip-stencil))))
+
+;; ## clean file spec
+;; Expect a file-spec
+(defn clean-file-spec [{:keys[dest-file]}]
+  (when (.exists dest-file)
+    (.delete dest-file)
+    (loop [parent (.getParentFile dest-file)]
+      (when (and parent
+                 (.isDirectory parent)
+                 (not (seq (.list parent))))
+        ;;(println "Delete parent:" parent)
+        (when  (.delete parent)
+          (recur (.getParentFile parent)))))))
+
+;; ## clean task
+
+(defn clean-task 
+  "Remove the files created by executing the resource plugin."
+  [project-info]
+  (->> (file-spec-seq project-info)
+       (map clean-file-spec)))
+
+;; ## resource
+;; This is the main entry point into the plugin.  It supports 3 tasks:
+;; copy, clean and pprint.
+;;
+;; This function creates the `ProjectInfo`, determines which task is
+;; needs and calls it.
+
 (defn resource
   "Task name can also be pprint or clean"
   [project & task-keys]
@@ -181,12 +230,13 @@ Return a seq of 3 element vectors.
               resource-paths nil
               extra-values nil}} (:resource project)]
     (let [value-map (merge {} project (plugin-values) (system-properties) extra-values)
+          resource-paths (normalize-resource-paths resource-paths includes excludes target-path)
           task-name (first task-keys)
-          resource-paths (normalize-resource-paths resource-paths includes excludes target-path)]
+          project-info (ProjectInfo. resource-paths target-path value-map includes excludes skip-stencil update)]
       ;;(println "TASK:" task-name)
       (cond
        (= "pprint" task-name) (pprint value-map)
-       (= "clean" task-name) (resource* clean resource-paths target-path value-map includes excludes skip-stencil update)
+       (= "clean" task-name) (clean-task project-info)
        :else (resource* copy resource-paths target-path value-map includes excludes skip-stencil update)))))
 
 (defn compile-hook [task & [project & more-args :as args]]
