@@ -115,7 +115,9 @@ Return:
 (defrecord FileSpec [src src-file dest resource-path dest-file skip])
 
 (defn include-file? 
-  "Take a FileSpec and check if that file should be included"
+  "Take a FileSpec and check if that file should be included.  
+
+  Return the name of the file or nil if it is not to be included."
 [{:keys [src resource-path]}]
   (let [ [_ {:keys [includes excludes]}] resource-path]
     ;(println "include-file?: " includes excludes fname)

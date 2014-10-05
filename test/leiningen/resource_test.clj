@@ -22,7 +22,9 @@
 (def gen-source-path gen-path)
 (def gen-target-path gen-path)
 
-(def gen-includes (gen/one-of [(gen/return #"^.*$") (gen/list gen-regex)]))
+                               
+(def gen-includes (gen/one-of [(gen/tuple (gen/return #"^.*$")) 
+                               (gen/list gen-regex)]))
 (def gen-excludes (gen/one-of [(gen/return nil) (gen/list gen-regex)]))
 (def gen-target-path gen/string-ascii)
 
@@ -111,7 +113,9 @@
               gen-update)))
 
 
-;; [src src-file dest resource-path]
+
+;;  FileSpec [src src-file dest resource-path dest-file skip])
+;;
 (def gen-file-spec (gen/fmap (fn [m] (merge m {:src-file (java.io.File. (:src m))}))
                              (gen/hash-map :src gen-source-path
                                            :dest gen-target-path
@@ -121,10 +125,6 @@
   (gen/fmap (fn [args] [(apply normalize-resource-paths args) args])
             (gen/tuple gen-resource-paths gen-includes gen-excludes gen-target-path)))
 
-
-(def gen-include-file? 
-  (gen/fmap (fn [args] [(apply include-file? args) args])
-            (gen/tuple gen-file-spec)))
 
 (def gen-dest-from-src 
   (gen/fmap (fn [[sp tp p :as args]] [(dest-from-src sp tp (io/file sp p)) args])
@@ -143,6 +143,8 @@
 
 ;; ## dest-from-src
 ;; The result will have duplicate / removed as well as a trailing / 
+;; An empty file is set to /
+
 
 (ct/defspec test-dest-from-src 100
   (prop/for-all [[rtnval [source-path target-path path]] gen-dest-from-src]
@@ -161,8 +163,27 @@
                                                  #"/+" "/")
                          p))))))
 
-  
-                                  
-                  
-                
-                
+
+;; ## include-file?
+;; Properties
+;; * A non-nil means the source matches an include
+;; * A non-nil means the source does not match an include
+;; * A nil return could either be a no includes match or an exlcude matches
+
+
+
+(def gen-include-file? 
+  (gen/fmap (fn [args] [(apply include-file? args) args])
+            (gen/tuple gen-file-spec)))
+
+(ct/defspec test-include-file? 100
+  (prop/for-all [[rtnval [args]] gen-include-file?]
+                (let [{:keys [src resource-path]} args
+                      [_ {:keys [includes excludes]}] resource-path]
+                  (if rtnval
+                    (and (is (re-matches-any includes src))
+                         (is (not (re-matches-any excludes src))))
+                    (is (or (not (re-matches-any includes src))
+                            (re-matches-any excludes src)))))))
+                             
+
