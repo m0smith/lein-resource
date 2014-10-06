@@ -38,7 +38,7 @@
 (def gen-update (gen/return false))
 (def gen-regex (gen/elements [ #"^.*~$" #".html$" #".css$" #".xml$"]))
 (def gen-extension (gen/elements [ "~" ".html" ".css" ".xml"]))
-
+(def gen-skip (gen/elements [true false]))
 (def gen-path (gen/fmap (fn [f] (apply str (interpose "/" f))) 
                         (gen/list (gen/not-empty gen/string-alpha-numeric))))
 (def gen-source-path gen-path)
@@ -148,7 +148,7 @@
                 (->FileSpec src src-file dest resource-path dest-file skip)))
             (gen/tuple gen-source-path 
                        gen-resource-path
-                       gen-skip-stencil)))
+                       gen-skip)))
 
 (def gen-normalize 
   (gen/fmap (fn [args] [(apply normalize-resource-paths args) args])

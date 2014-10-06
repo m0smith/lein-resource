@@ -175,12 +175,9 @@ Return a FileSpec"
 
 (defrecord ProjectInfo [resource-paths target-path value-map includes excludes skip-stencil update])
 
-
-
 (defn update-file-spec [skip-stencil {:keys[ src dest] :as file-spec}]
-  (let[ 
-       skip (re-matches-any skip-stencil src)]
-    (assoc file-spec  :skip skip)))
+  (let [skip (re-matches-any skip-stencil src)]
+    (assoc file-spec :skip skip)))
 
 ;; ## file spec seq
 ;; Take in a `ProjectInfo` and return a seq of `FileSpec`
@@ -192,14 +189,13 @@ Return a FileSpec"
 
 ;; ## clean file spec
 ;; Expect a file-spec
-(defn clean-file-spec [{:keys[dest-file]}]
+(defn clean-file-spec [ {:keys[dest-file]} ] 
   (when (.exists dest-file)
     (.delete dest-file)
     (loop [parent (.getParentFile dest-file)]
       (when (and parent
                  (.isDirectory parent)
                  (not (seq (.list parent))))
-        ;;(println "Delete parent:" parent)
         (when  (.delete parent)
           (recur (.getParentFile parent)))))))
 
