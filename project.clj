@@ -4,7 +4,7 @@
   "
 A task that copies the files for the resource-paths to the
 target-path, applying stencil to each file allowing the files to be
-updated as they are copied.
+updated as they are copied. 
 
 ## Usage
 
@@ -70,6 +70,10 @@ To configure the plugin,add to the project.clj:
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.6.0"]
+                 ;[org.clojure/core.cache "0.6.4"]
+                 ;[org.clojure/data.priority-map "0.0.5"]
+                 [org.clojure/core.async "0.1.346.0-17112a-alpha"
+                  :exclusions []]
                  [bultitude "0.2.4"]  ;; namespace finder
                  [org.clojure/data.priority-map "0.0.5"]
                  [marginalia "0.8.0"] 

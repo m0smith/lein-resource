@@ -5,12 +5,34 @@
             [clojure.test.check.clojure-test :as ct]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
-            [clojure.java.io :as io]
+            [clojure.java.io :as io] 
+            [clojure.core.async :as async ]
             [leiningen.resource :refer :all]))
 
 
-(defn gen-nil-less-map [m] (gen/fmap (fn [f] (into {} (remove (comp nil? second) f))) m))
+;; Stolen from the old clojure contrib:  
+;; It was left out of clojure.java.io because in Java 6 there's no way to
+;; detect whether a given directory is actually a symlink, so it has to
+;; recurse into symlinked directories indiscriminately. This behaviour is
+;; arguably dangerous. Perhaps in the far future it could be added once
+;; support for Java 6 is dropped.
+;;
+;; Not generating symlinks so it is safe in this context
 
+
+(defn delete-file-recursively
+  "Delete file f. If it's a directory, recursively delete all its contents.
+  Raise an exception if any deletion fails unless silently is true."
+  [f & [silently]]
+  (let [f (io/file f)]
+    (if (.isDirectory f)
+      (doseq [child (.listFiles f)]
+        (delete-file-recursively child silently)))
+    (when (.exists f)
+      (io/delete-file f silently))))
+
+
+(defn gen-nil-less-map [m] (gen/fmap (fn [f] (into {} (remove (comp nil? second) f))) m))
 
 (def gen-value-map (gen/return {}))
 (def gen-skip-stencil (gen/return false))
@@ -222,11 +244,19 @@
      (is (.startsWith  dest target-path))
      )))
 
+(defn mark-for-deletion [ch [source-path {:keys [target-path]}]]
+  (async/go (async/>! ch source-path) (async/>! ch target-path)))
+
 (def gen-all-file-specs
   (gen/fmap (fn [args] [(apply all-file-specs args) args])
             (gen/tuple gen-resource-paths-od)))
 
 (ct/defspec test-all-file-specs 50
-  (prop/for-all [[rtnval [args]] gen-all-file-specs]
-                (is (every? #(instance? leiningen.resource.FileSpec %) rtnval))
-                (every? file-spec-consistant?  rtnval)))
+  (prop/for-all [[rtnval [resource-paths]] gen-all-file-specs]
+                (let [ch (async/chan)]
+                  (doseq [ rp resource-paths] (mark-for-deletion ch rp))
+                  (is (every? #(instance? leiningen.resource.FileSpec %) rtnval))
+                  (every? file-spec-consistant? rtnval)
+                  (async/go (while true 
+                              (delete-file-recursively (async/<! ch)))))))
+
