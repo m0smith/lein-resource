@@ -9,6 +9,8 @@
             [clojure.core.async :as async ]
             [leiningen.resource :refer :all]))
 
+(def sep java.io.File/separator)
+
 
 ;; Stolen from the old clojure contrib:  
 ;; It was left out of clojure.java.io because in Java 6 there's no way to
@@ -39,7 +41,7 @@
 (def gen-regex (gen/elements [ #"^.*~$" #".html$" #".css$" #".xml$"]))
 (def gen-extension (gen/elements [ "~" ".html" ".css" ".xml"]))
 (def gen-skip (gen/elements [true false]))
-(def gen-path (gen/fmap (fn [f] (apply str (interpose "/" f))) 
+(def gen-path (gen/fmap (fn [f] (apply str (interpose sep f))) 
                         (gen/list (gen/not-empty gen/string-alpha-numeric))))
 (def gen-source-path gen-path)
 (def gen-target-path gen-path)
@@ -191,22 +193,25 @@
 ;; An empty file is set to /
 
 
+
 (ct/defspec test-dest-from-src 100
   (prop/for-all [[rtnval [source-path target-path path]] gen-dest-from-src]
                 (let [p (.getPath rtnval)
                       count-path (count path)
                       count-target-path (count target-path)
-                      target-path (if (and (= \/ (last target-path))
+                      target-path (if (and (= (first sep) (last target-path))
                                            (> count-target-path 1))
                                     (subs target-path 0 (dec count-target-path))
                                     target-path)]
                   (if (= 0 count-path count-target-path)
-                    (= p "/")
+                    (is (= p sep))
                     (if (= 0 count-path)
-                      (= p target-path)
-                      (= (clojure.string/replace (str target-path "/" path) 
-                                                 #"/+" "/")
-                         p))))))
+                      (is (= p target-path))
+                      (let [full-path (str target-path sep path)
+                            dup-regex (re-pattern (str "(\\" sep ")+"))]
+                        (println dup-regex full-path sep p)
+                        (is (= (clojure.string/replace full-path dup-regex "$1")
+                               p))))))))
 
 
 ;; ## include-file?
@@ -232,6 +237,10 @@
 ;; ## all-file-specs
 ;; It returns a seq of FileSpec
 
+(defn starts-with [string pre]
+  (let [string (clojure.string/replace string #"\\" "/")]
+    (.startsWith string pre)))
+
 (defn file-spec-consistant? [{:keys[src src-file dest dest-file resource-path] :as file-spec}]
   (let [[source-path {:keys[target-path] :as options}] resource-path]
     (and
@@ -240,8 +249,8 @@
      (is (string? dest))
      (is (instance? java.io.File src-file))
      (is (instance? java.io.File dest-file))
-     (is (.startsWith src source-path))
-     (is (.startsWith  dest target-path))
+     (is (starts-with src source-path))
+     (is (starts-with  dest target-path))
      )))
 
 (defn mark-for-deletion [ch [source-path {:keys [target-path]}]]
