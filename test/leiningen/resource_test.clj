@@ -35,7 +35,6 @@
 (defn gen-nil-less-map [m] (gen/fmap (fn [f] (into {} (remove (comp nil? second) f))) m))
 
 (def gen-value-map (gen/return {}))
-(def gen-skip-stencil (gen/return false))
 (def gen-update (gen/return false))
 (def gen-regex (gen/elements [ #"^.*~$" #".html$" #".css$" #".xml$"]))
 (def gen-extension (gen/elements [ "~" ".html" ".css" ".xml"]))
@@ -49,6 +48,7 @@
 (def gen-includes (gen/one-of [(gen/tuple (gen/return #"^.*$")) 
                                (gen/list gen-regex)]))
 (def gen-excludes (gen/one-of [(gen/return nil) (gen/list gen-regex)]))
+(def gen-skip-stencil (gen/one-of [(gen/return nil) (gen/list gen-regex)]))
 
 
 ;; ## Generate a Source Tree

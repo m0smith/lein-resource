@@ -49,6 +49,9 @@ To configure the plugin,add to the project.clj:
          ;; optional - default is no excludes 
          ;; which is en empty vector
          :excludes [ #\".*~\" ]
+
+         ;; optioan - list of regex of files to skip stencil
+         :skip-stencil [ ]
    
          ;; optional - default to nil
          :extra-values 
