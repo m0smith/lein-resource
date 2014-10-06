@@ -75,10 +75,10 @@ To configure the plugin,add to the project.clj:
   :dependencies [[org.clojure/clojure "1.6.0"]
                  ;[org.clojure/core.cache "0.6.4"]
                  ;[org.clojure/data.priority-map "0.0.5"]
-                 [bultitude "0.2.4"]  ;; namespace finder
+                 [bultitude "0.2.6"]  ;; namespace finder
                  [org.clojure/data.priority-map "0.0.5"]
                  
-                 [stencil "0.3.3" :exclusions [org.clojure/core.cache]]
+                 [stencil "0.3.4" :exclusions [org.clojure/core.cache]]
                  ]
   :profiles { :dev 
              { :dependencies [[org.clojure/core.async "0.1.346.0-17112a-alpha"]
@@ -87,7 +87,7 @@ To configure the plugin,add to the project.clj:
                               ]}}
 
             
-  :plugins [[lein-pprint "1.1.1"]]
+  :plugins [[lein-pprint "1.1.2"]]
   :scm {:url "git@github.com:m0smith/lein-resource.git"}
   :url "https://github.com/m0smith/lein-resource"
   :eval-in-leiningen true
