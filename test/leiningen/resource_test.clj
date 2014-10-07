@@ -209,7 +209,7 @@
                       (is (= p target-path))
                       (let [full-path (str target-path sep path)
                             dup-regex (re-pattern (str "(\\" sep ")+"))]
-                        (println dup-regex full-path sep p)
+                        ;(println dup-regex full-path sep p)
                         (is (= (clojure.string/replace full-path dup-regex "$1")
                                p))))))))
 
