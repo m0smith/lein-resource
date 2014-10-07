@@ -45,7 +45,12 @@
                         (gen/list (gen/not-empty gen/string-alpha-numeric))))
 (def gen-source-path gen-path)
 (def gen-target-path gen-path)
-
+(def gen-file-name 
+  (gen/fmap (partial apply str)
+            (gen/tuple 
+             (gen/not-empty gen/string-alpha-numeric) 
+             gen-extension)))
+(def gen-file-names (gen/not-empty (gen/list gen-file-name)))
                                
 (def gen-includes (gen/one-of [(gen/tuple (gen/return #"^.*$")) 
                                (gen/list gen-regex)]))
@@ -77,14 +82,20 @@
               (io/make-parents (io/file f "dummy"))
               f) (gen-tree-root "target/lein-resource/dest/")))
 
+
+(defn make-path-od 
+  ([root file ext content] (make-path-od root (str file ext) content))
+  ([root file content]
+     (io/make-parents root file)
+     (spit (io/file root file) content)))
+
 (def gen-source-tree
   (gen/fmap (fn [[root files]]
               (doseq[[f ext] files]
-                (io/make-parents root f)
-                (spit (io/file root  (str f ext)) "hamsters love you"))
+                (make-path-od root f ext "hamsters love you too"))
               root)
             (gen/tuple
-             gen-source-tree-root 
+             (gen/not-empty gen-source-tree-root )
              (gen/list (gen/tuple
                         (gen/not-empty gen/string-alpha-numeric)
                         gen-extension)))))
@@ -269,3 +280,34 @@
                   (async/go (while true 
                               (delete-file-recursively (async/<! ch)))))))
 
+
+;; ## clean-feil-spec
+;; Propreties
+;;  * Delete the file specified in dest-file
+;;  * Delete empty parent directories
+;;  * Do not delete other files in the same directory
+
+
+;; Create a directory with 1 or more files
+(def gen-files-for-clean-file-spec
+  (gen/fmap (fn [[root files]]
+              (for [file files]
+                (let [_ ( make-path-od root file "From gen-clean-file-spec" )]
+                  [root file])))
+                             
+            (gen/tuple
+             gen-dest-tree-root
+             gen-file-names)))
+
+(ct/defspec test-clean-file-spec 50
+  (prop/for-all [files gen-files-for-clean-file-spec]
+    (and (every? identity
+                 (for [[root file :as args] files]
+                   (let [dest-file (io/file root file)]
+                     (clean-file-spec {:dest-file dest-file})        
+                     (is (not (.exists dest-file))))))
+         (let [dest-file (apply io/file (first files))
+               parent (.getParentFile dest-file)]
+           (is (not (.exists parent)))))))
+           
+    

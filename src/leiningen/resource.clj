@@ -124,7 +124,9 @@ Return:
     (if (re-matches-any includes src)
       (if-not (re-matches-any excludes src)
         src))))
-
+(defn echo [label s]
+  (println label s)
+  s)
 
 (defn all-file-specs
   "Take the directories mentioned in 'resource-paths' and get all the
@@ -134,7 +136,7 @@ Return a FileSpec"
 
   [resource-paths]
   (for [[source-path {:keys [target-path]} :as resource-path] resource-paths
-        ^java.io.File file (file-seq (io/file source-path))
+        ^java.io.File file (file-seq (io/file  source-path))
         :when (.isFile file)]
     (let [dest-file (dest-from-src source-path target-path file)
           dest (.getPath dest-file)]
