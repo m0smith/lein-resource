@@ -45,6 +45,17 @@
                         (gen/list (gen/not-empty gen/string-alpha-numeric))))
 (def gen-source-path gen-path)
 (def gen-target-path gen-path)
+
+(def gen-file-content-part 
+  (gen/one-of 
+   [
+    (gen/elements [ "STUFF" " " \tab \newline "HAMSTER" "{{V1}}" "{{V2}}"])
+    gen/string]))
+   
+(def gen-file-content
+  (gen/fmap (partial apply str)
+            (gen/not-empty (gen/list gen-file-content-part))))
+
 (def gen-file-name 
   (gen/fmap (partial apply str)
             (gen/tuple 
@@ -87,18 +98,23 @@
   ([root file ext content] (make-path-od root (str file ext) content))
   ([root file content]
      (io/make-parents root file)
-     (spit (io/file root file) content)))
+     (spit (io/file root file) content))
+  ([file content]
+     (println file)
+     (io/make-parents file)
+     (spit (io/file file) content)))
 
 (def gen-source-tree
   (gen/fmap (fn [[root files]]
-              (doseq[[f ext] files]
-                (make-path-od root f ext "hamsters love you too"))
+              (doseq[[f ext content] files]
+                (make-path-od root f ext content))
               root)
             (gen/tuple
              (gen/not-empty gen-source-tree-root )
              (gen/list (gen/tuple
                         (gen/not-empty gen/string-alpha-numeric)
-                        gen-extension)))))
+                        gen-extension
+                        gen-file-content)))))
 
 ;; ## Resource Path In Memory
 
@@ -149,19 +165,38 @@
 
 
 
-;;  FileSpec [src src-file dest resource-path dest-file skip])
+;;  FileSpec [src src-file dest resource-path dest-file skip update])
 ;;
 (def gen-file-spec 
-  (gen/fmap (fn [[src resource-path skip]] 
+  (gen/fmap (fn [[src resource-path skip update]] 
               (let [src-file (io/file src)
                     [_ {:keys [target-path]}] resource-path
                     dest target-path
                     dest-file (io/file dest)
                     ]
-                (->FileSpec src src-file dest resource-path dest-file skip)))
+                (->FileSpec src src-file dest resource-path dest-file skip update)))
             (gen/tuple gen-source-path 
                        gen-resource-path
-                       gen-skip)))
+                       gen-skip
+                       gen-update)))
+
+(def gen-file-spec-od
+  (gen/fmap (fn [[file dfile resource-path skip update content]] 
+              (let [ [root] resource-path
+                    src-file (io/file root file)
+                    src (.getPath src-file)
+                    [_ {:keys [target-path]}] resource-path
+                    dest-file (io/file target-path dfile)
+                    dest (.getPath dest-file)
+                    ]
+                (make-path-od src-file content)
+                (->FileSpec src src-file dest resource-path dest-file skip update)))
+            (gen/tuple (gen/not-empty gen/string-alpha-numeric)
+                       (gen/not-empty gen/string-alpha-numeric)
+                       gen-resource-path-od
+                       gen-skip
+                       gen-update
+                       gen-file-content)))
 
 (def gen-normalize 
   (gen/fmap (fn [args] [(apply normalize-resource-paths args) args])
@@ -269,7 +304,7 @@
 
 (def gen-all-file-specs
   (gen/fmap (fn [args] [(apply all-file-specs args) args])
-            (gen/tuple gen-resource-paths-od)))
+            (gen/tuple gen-resource-paths-od gen-update)))
 
 (ct/defspec test-all-file-specs 50
   (prop/for-all [[rtnval [resource-paths]] gen-all-file-specs]
@@ -281,7 +316,7 @@
                               (delete-file-recursively (async/<! ch)))))))
 
 
-;; ## clean-feil-spec
+;; ## clean-file-spec
 ;; Propreties
 ;;  * Delete the file specified in dest-file
 ;;  * Delete empty parent directories
@@ -310,4 +345,14 @@
                parent (.getParentFile dest-file)]
            (is (not (.exists parent)))))))
            
-    
+;; ## copy file spec
+;; Properties
+;; * A file exists in the target    
+
+;; Create a directory with 1 or more files
+
+
+                
+   
+   
+

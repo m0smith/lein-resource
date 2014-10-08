@@ -58,7 +58,7 @@
 (defn re-matches-any [regex-seq val]
   (some #(re-matches % val) regex-seq))
 
-(defn copy 
+(defn copyxxx 
   "Copy src to dest-file unless update is true and src is older than dest. When skip-stencil is true, do not process the file using stencil.
 
 Return: 
@@ -111,8 +111,9 @@ Return:
 ;; resource-path [ source-spec option]
 ;; dest-file - dest as a File 
 ;; skip - if true, do not pass the file through stencil
+;; update - if true, only copy more recent files
 
-(defrecord FileSpec [src src-file dest resource-path dest-file skip])
+(defrecord FileSpec [src src-file dest resource-path dest-file skip update])
 
 (defn include-file? 
   "Take a FileSpec and check if that file should be included.  
@@ -134,28 +135,15 @@ files in those directories as a seq.
 
 Return a FileSpec"
 
-  [resource-paths]
+  [resource-paths update]
   (for [[source-path {:keys [target-path]} :as resource-path] resource-paths
         ^java.io.File file (file-seq (io/file  source-path))
         :when (.isFile file)]
     (let [dest-file (dest-from-src source-path target-path file)
           dest (.getPath dest-file)]
-      (FileSpec.  (.getPath file) file dest resource-path dest-file false))))
+      (FileSpec.  (.getPath file) file dest resource-path dest-file false update))))
 
 
-(defn- resource* 
-  "
-  includes - a seq of regex that files must match to be included
-  excludes - a seq of regex.  A file matching the regex will be excluded"
-  [task resource-paths target-path value-map def-includes def-excludes skip-stencil update]
-      (let [file-specs (all-file-specs resource-paths)]
-        ;(println "resource*: files:" files)
-        (doseq [file-spec file-specs]
-          (when (include-file? file-spec)
-            ;(println "resource*: file-spec:" file-spec)
-            (let [^java.io.File dest-file (io/file (:dest file-spec))
-                  skip (re-matches-any skip-stencil (:src file-spec))]
-              (task (:src file-spec) dest-file value-map skip update (:src-file file-spec)))))))
 
 
 ;; A resource path is either a string `src` or a pair
@@ -184,8 +172,8 @@ Return a FileSpec"
 ;; ## file spec seq
 ;; Take in a `ProjectInfo` and return a seq of `FileSpec`
 
-(defn file-spec-seq [{:keys [resource-paths target-path skip-stencil] :as project-info}]
-  (->> (all-file-specs resource-paths)
+(defn file-spec-seq [{:keys [resource-paths target-path skip-stencil update] :as project-info}]
+  (->> (all-file-specs resource-paths update)
        (filter include-file?)
        (map (partial update-file-spec skip-stencil))))
 
@@ -199,7 +187,8 @@ Return a FileSpec"
                  (.isDirectory parent)
                  (not (seq (.list parent))))
         (when  (.delete parent)
-          (recur (.getParentFile parent)))))))
+          (recur (.getParentFile parent)))))
+    dest-file))
 
 ;; ## clean task
 
@@ -208,6 +197,33 @@ Return a FileSpec"
   [project-info]
   (->> (file-spec-seq project-info)
        (map clean-file-spec)))
+
+;; ## copy file spec
+;; Expect a file-spec
+;[src src-file dest resource-path dest-file skip update]
+(defn copy-file-spec [ {:keys[value-map]} {:keys[src src-file dest-file update skip]} ] 
+  (if (not (.exists src-file))
+    (println "Missing source file:" src)
+    (let [dest-ts (.lastModified dest-file)
+          src-ts (.lastModified src-file)]
+      (when (or (not update)
+                (and update (<  dest-ts src-ts)))
+        (println "Copy" src "to" (str dest-file))
+        (let [s (if-not skip
+                  (stencil/render-string (slurp src) value-map)
+                  (io/file src))]
+          (io/make-parents dest-file)
+          (io/copy s dest-file)
+          ;(println "hhhhh" s src-file dest-file)
+          [src-file dest-file])))))
+
+;; ## copy task
+
+(defn copy-task 
+  "Remove the files created by executing the resource plugin."
+  [project-info]
+  (->> (file-spec-seq project-info)
+       (map (partial copy-file-spec project-info))))
 
 ;; ## resource
 ;; This is the main entry point into the plugin.  It supports 3 tasks:
@@ -236,7 +252,8 @@ Return a FileSpec"
       (cond
        (= "pprint" task-name) (pprint value-map)
        (= "clean" task-name) (clean-task project-info)
-       :else (resource* copy resource-paths target-path value-map includes excludes skip-stencil update)))))
+       (= "copy" task-name) (copy-task project-info)
+       :else (copy-task project-info)))))
 
 (defn compile-hook [task & [project & more-args :as args]]
   (println "Copying resources...")
