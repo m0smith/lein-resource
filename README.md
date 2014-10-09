@@ -27,11 +27,22 @@ To have it run before compile and after clean:
 To configure lein-resource, add to `project.clj`
 ```clojure
 :resource {
+
   :resource-paths ["src-resources"] ;; required or does nothing
+  ; OR
+  :resource-paths [ [\"src-resource\" 
+                     {
+                      :includes []  ;; list of regex
+                      :excludes []  ;; list of regex
+                      :target-path \"\" ;; directory to store files
+                    }]]
+
   :target-path "target/html" ;; optional default to the global one
   :update   false      ;; if true only process files with src newer than dest
   :includes [ #".*" ]  ;; optional - this is the default
   :excludes [ #".*~" ] ;; optional - default is no excludes which is en empty vector
+  :silent false ;; if true, only print errors
+  :verbose false ;; if true, print debugging information
   :skip-stencil [ #"src-resources/images/.*" ] ;; optionally skip stencil processing - default is an empty vector
   :extra-values { :year ~(.get (java.util.GregorianCalendar.)
                                    (java.util.Calendar/YEAR)) }  ;; optional - default to nil
