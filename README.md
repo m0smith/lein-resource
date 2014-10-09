@@ -30,11 +30,11 @@ To configure lein-resource, add to `project.clj`
 
   :resource-paths ["src-resources"] ;; required or does nothing
   ; OR
-  :resource-paths [ [\"src-resource\" 
+  :resource-paths [ ["src-resource" 
                      {
                       :includes []  ;; list of regex
                       :excludes []  ;; list of regex
-                      :target-path \"\" ;; directory to store files
+                      :target-path "" ;; directory to store files
                     }]]
 
   :target-path "target/html" ;; optional default to the global one
