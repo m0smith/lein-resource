@@ -1,4 +1,4 @@
-(ns leiningen.resource
+ (ns leiningen.resource
   (:require [clojure.java.io :as io]
             [clojure.pprint :as pprint]
             [stencil.core :as stencil]
@@ -27,7 +27,30 @@
         fname (if (#{\/} (first fnamex)) (subs fnamex 1) fnamex)]
     (io/file dest-path fname)))
 
+(defn msg 
+  ([{:keys [silent] :as project-info}  text]
+     (when-not silent
+       (println  text))
+     text)
+  ([{:keys [silent] :as project-info} label text]
+     (when-not silent
+       (println label text))
+     text)
+  ([{:keys [silent] :as project-info} label v1 & v2]
+     (when-not silent
+       (apply println label v1 v2))
+     (concat [v1] v2)))
 
+(defn verbose-msg 
+  [{:keys [verbose] :as project-info} label text]
+  (when verbose
+    (println "leiningen-resouce:" label text))
+  text)
+
+(defn err-msg [ & text]
+  (apply println text)
+  text)
+  
 
 (defn- plugin-values
   "Additional value available to the stencil renderer"
@@ -57,46 +80,6 @@
 
 (defn re-matches-any [regex-seq val]
   (some #(re-matches % val) regex-seq))
-
-(defn copyxxx 
-  "Copy src to dest-file unless update is true and src is older than dest. When skip-stencil is true, do not process the file using stencil.
-
-Return: 
-    nil - no file copied due to update being set and the src older
-          than the dest 
-   [src-file dest-file] - when the file was copied
-"
-  [src dest-file value-map skip-stencil update src-file]
-  ;(println src dest-file value-map skip-stencil update src-file )
-  (if (not (.exists src-file))
-    (println "Missing source file:" src)
-    (let [dest-ts (.lastModified dest-file)
-          src-ts (.lastModified src-file)]
-      ;(println "update:" update " dest-ts:" dest-ts " src-ts:" src-ts)
-      (when (or (not update)
-                (and update (<  dest-ts src-ts)))
-        (println "Copy" src "to" (str dest-file))
-        (let [s (if-not skip-stencil
-                  (stencil/render-string (slurp src) value-map)
-                  (io/file src))]
-          (io/make-parents dest-file)
-          (io/copy s dest-file)
-          ;(println "hhhhh" s src-file dest-file)
-          [src-file dest-file])))))
-  
-(defn cleanxxx
-  "Remove the files created by executing the resource plugin."
-  [src ^java.io.File dest & args]
-  (println "Remove "  (str dest))
-  (when (.exists dest)
-    (.delete dest)
-    (loop [parent (.getParentFile dest)]
-      (when (and parent
-                 (.isDirectory parent)
-                 (not (seq (.list parent))))
-        ;;(println "Delete parent:" parent)
-        (when  (.delete parent)
-          (recur (.getParentFile parent)))))))
 
 (defn pprint 
   "Dump out the map of values passed to stencil"
@@ -135,9 +118,10 @@ files in those directories as a seq.
 
 Return a FileSpec"
 
-  [resource-paths update]
+  [{:keys [resource-paths update] :as project-info}]
+  (verbose-msg project-info "resource-paths" resource-paths)
   (for [[source-path {:keys [target-path]} :as resource-path] resource-paths
-        ^java.io.File file (file-seq (io/file  source-path))
+        ^java.io.File file (file-seq (io/file (verbose-msg project-info "source-path"  source-path)))
         :when (.isFile file)]
     (let [dest-file (dest-from-src source-path target-path file)
           dest (.getPath dest-file)]
@@ -163,7 +147,7 @@ Return a FileSpec"
         [source-path (merge default-options options)]))))
 
 
-(defrecord ProjectInfo [resource-paths target-path value-map includes excludes skip-stencil update])
+(defrecord ProjectInfo [resource-paths target-path value-map includes excludes skip-stencil update silent verbose])
 
 (defn update-file-spec [skip-stencil {:keys[ src dest] :as file-spec}]
   (let [skip (re-matches-any skip-stencil src)]
@@ -172,9 +156,11 @@ Return a FileSpec"
 ;; ## file spec seq
 ;; Take in a `ProjectInfo` and return a seq of `FileSpec`
 
-(defn file-spec-seq [{:keys [resource-paths target-path skip-stencil update] :as project-info}]
-  (->> (all-file-specs resource-paths update)
+(defn file-spec-seq [{:keys [skip-stencil] :as project-info}]
+  (->> (all-file-specs project-info)
+       (verbose-msg project-info "all-file-specs")
        (filter include-file?)
+       (verbose-msg project-info "POST include-file?")
        (map (partial update-file-spec skip-stencil))))
 
 ;; ## clean file spec
@@ -195,20 +181,22 @@ Return a FileSpec"
 (defn clean-task 
   "Remove the files created by executing the resource plugin."
   [project-info]
-  (->> (file-spec-seq project-info)
-       (map clean-file-spec)))
+  (every? identity (->> (file-spec-seq project-info)
+                        (map clean-file-spec))))
 
 ;; ## copy file spec
 ;; Expect a file-spec
 ;[src src-file dest resource-path dest-file skip update]
-(defn copy-file-spec [ {:keys[value-map]} {:keys[src src-file dest-file update skip]} ] 
+(defn copy-file-spec [ {:keys[value-map silent] :as project-info} 
+                       {:keys[src src-file dest-file update skip]} ] 
+  (verbose-msg project-info "***** copy-file-spec:" (str "SRC:" src-file "DEST:" dest-file))
   (if (not (.exists src-file))
-    (println "Missing source file:" src)
+    (err-msg "Missing source file:" src)
     (let [dest-ts (.lastModified dest-file)
           src-ts (.lastModified src-file)]
       (when (or (not update)
                 (and update (<  dest-ts src-ts)))
-        (println "Copy" src "to" (str dest-file))
+        (msg project-info "Copy" src "to" (str dest-file))
         (let [s (if-not skip
                   (stencil/render-string (slurp src) value-map)
                   (io/file src))]
@@ -222,8 +210,10 @@ Return a FileSpec"
 (defn copy-task 
   "Remove the files created by executing the resource plugin."
   [project-info]
-  (->> (file-spec-seq project-info)
-       (map (partial copy-file-spec project-info))))
+  (println "copy task" "START")
+  (every? identity (->> (file-spec-seq project-info)
+                        (verbose-msg project-info "file-spec-seq")
+                        (map (partial copy-file-spec project-info)))))
 
 ;; ## resource
 ;; This is the main entry point into the plugin.  It supports 3 tasks:
@@ -236,10 +226,12 @@ Return a FileSpec"
   "Task name can also be pprint or clean"
   [project & task-keys]
   (let [{:keys [resource-paths target-path extra-values excludes includes 
-                skip-stencil update]
+                skip-stencil update silent verbose]
          :or {update false
               excludes []
               includes [#".*"]
+              silent false
+              verbose false
               skip-stencil []
               target-path (:target-path project)
               resource-paths nil
@@ -247,7 +239,8 @@ Return a FileSpec"
     (let [value-map (merge {} project (plugin-values) (system-properties) extra-values)
           resource-paths (normalize-resource-paths resource-paths includes excludes target-path)
           task-name (first task-keys)
-          project-info (ProjectInfo. resource-paths target-path value-map includes excludes skip-stencil update)]
+          project-info (ProjectInfo. resource-paths target-path value-map includes excludes skip-stencil update silent verbose)]
+      (verbose-msg project-info "project-info" project-info)
       ;;(println "TASK:" task-name)
       (cond
        (= "pprint" task-name) (pprint value-map)
@@ -256,12 +249,12 @@ Return a FileSpec"
        :else (copy-task project-info)))))
 
 (defn compile-hook [task & [project & more-args :as args]]
-  (println "Copying resources...")
+  (msg (:silent project) "Copying resources...")
   (resource project)
   (apply task args))
 
 (defn clean-hook [task & [project & more-args :as args]]
-  (println "Removing copied resources...")
+  (msg (:silent project) "Removing copied resources...")
   (resource project "clean")
   (apply task args))
 

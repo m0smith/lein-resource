@@ -33,6 +33,13 @@ To configure the plugin,add to the project.clj:
      :resource {
          ;; required or will do nothing
          :resource-paths [&quot;src-resource&quot;]
+          OR
+         :resource-paths [ [&quot;src-resource&quot; 
+                            {
+                             :includes []  ;; list of regex
+                             :excludes []  ;; list of regex
+                             :target-path &quot;&quot; ;; directory to store files
+                              }]]
  
          ;; optional default to the global one
          :target-path &quot;target/html&quot;   
@@ -50,6 +57,12 @@ To configure the plugin,add to the project.clj:
 
          ;; optioan - list of regex of files to skip stencil
          :skip-stencil [ ]
+
+         ;; optional - if true, do not echo progress to the screen
+         :silent false
+   
+         ;; optional - if true, echo lots of debug info
+         :verbose false
    
          ;; optional - default to nil
          :extra-values 
@@ -2933,7 +2946,7 @@ net.brehaut.ClojureTools = (function (SH) {
     build_tree: build_tree
   };
 })(SyntaxHighlighter);
-</script><title>lein-resource -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name"><a href="https://github.com/m0smith/lein-resource">lein-resource</a></h1><h2 class="project-version">0.3.8-SNAPSHOT</h2><br /><p>A task that copies the files for the resource-paths to the
+</script><title>lein-resource -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name"><a href="https://github.com/m0smith/lein-resource">lein-resource</a></h1><h2 class="project-version">0.3.9</h2><br /><p>A task that copies the files for the resource-paths to the
 target-path, applying stencil to each file allowing the files to be
 updated as they are copied. </p>
 
@@ -2969,6 +2982,13 @@ updated as they are copied. </p>
 <pre><code> :resource {
      ;; required or will do nothing
      :resource-paths ["src-resource"]
+      OR
+     :resource-paths [ ["src-resource" 
+                        {
+                         :includes []  ;; list of regex
+                         :excludes []  ;; list of regex
+                         :target-path "" ;; directory to store files
+                          }]]
 
      ;; optional default to the global one
      :target-path "target/html"   
@@ -2986,6 +3006,12 @@ updated as they are copied. </p>
 
      ;; optioan - list of regex of files to skip stencil
      :skip-stencil [ ]
+
+     ;; optional - if true, do not echo progress to the screen
+     :silent false
+
+     ;; optional - if true, echo lots of debug info
+     :verbose false
 
      ;; optional - default to nil
      :extra-values 
@@ -3005,8 +3031,8 @@ updated as they are copied. </p>
 <h3>test.check</h3>
 
 <p><a href="https://github.com/clojure/test.check">test.check</a></p>
-</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.6.0</td></tr><tr><td class="dep-name">bultitude</td><td class="dotted"><hr /></td><td class="dep-version">0.2.6</td></tr><tr><td class="dep-name">org.clojure/data.priority-map</td><td class="dotted"><hr /></td><td class="dep-version">0.0.5</td></tr><tr><td class="dep-name">stencil</td><td class="dotted"><hr /></td><td class="dep-version">0.3.4</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#leiningen.resource">leiningen.resource</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#leiningen.resource" name="leiningen.resource"><h1 class="project-name">leiningen.resource</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(ns leiningen.resource
+</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.6.0</td></tr><tr><td class="dep-name">stencil</td><td class="dotted"><hr /></td><td class="dep-version">0.3.4</td></tr><tr><td class="dep-name">org.clojure/data.priority-map</td><td class="dotted"><hr /></td><td class="dep-version">0.0.4</td></tr><tr><td class="dep-name">bultitude</td><td class="dotted"><hr /></td><td class="dep-version">0.2.6</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#leiningen.resource">leiningen.resource</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#leiningen.resource" name="leiningen.resource"><h1 class="project-name">leiningen.resource</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure"> (ns leiningen.resource
   (:require [clojure.java.io :as io]
             [clojure.pprint :as pprint]
             [stencil.core :as stencil]
@@ -3029,7 +3055,28 @@ updated as they are copied. </p>
         src (.getPath f)
         fnamex (subs src  s)
         fname (if (#{\/} (first fnamex)) (subs fnamex 1) fnamex)]
-    (io/file dest-path fname)))</pre></td></tr><tr><td class="docs"><p>Additional value available to the stencil renderer</p>
+    (io/file dest-path fname)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn msg 
+  ([{:keys [silent] :as project-info}  text]
+     (when-not silent
+       (println  text))
+     text)
+  ([{:keys [silent] :as project-info} label text]
+     (when-not silent
+       (println label text))
+     text)
+  ([{:keys [silent] :as project-info} label v1 &amp; v2]
+     (when-not silent
+       (apply println label v1 v2))
+     (concat [v1] v2)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn verbose-msg 
+  [{:keys [verbose] :as project-info} label text]
+  (when verbose
+    (println &quot;leiningen-resouce:&quot; label text))
+  text)</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn err-msg [ &amp; text]
+  (apply println text)
+  text)</pre></td></tr><tr><td class="docs"><p>Additional value available to the stencil renderer</p>
 </td><td class="codes"><pre class="brush: clojure">(defn- plugin-values
   []
   {
@@ -3049,42 +3096,7 @@ updated as they are copied. </p>
   []
   (reduce assoc-in-from-vector {} (system-properties-seq)))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn re-matches-any [regex-seq val]
-  (some #(re-matches % val) regex-seq))</pre></td></tr><tr><td class="docs"><p>Copy src to dest-file unless update is true and src is older than dest. When skip-stencil is true, do not process the file using stencil.</p>
-
-<p>Return: 
-    nil - no file copied due to update being set and the src older
-          than the dest 
-   [src-file dest-file] - when the file was copied</p>
-</td><td class="codes"><pre class="brush: clojure">(defn copyxxx 
-  [src dest-file value-map skip-stencil update src-file]
-  ;(println src dest-file value-map skip-stencil update src-file )
-  (if (not (.exists src-file))
-    (println &quot;Missing source file:&quot; src)
-    (let [dest-ts (.lastModified dest-file)
-          src-ts (.lastModified src-file)]
-      ;(println &quot;update:&quot; update &quot; dest-ts:&quot; dest-ts &quot; src-ts:&quot; src-ts)
-      (when (or (not update)
-                (and update (&lt;  dest-ts src-ts)))
-        (println &quot;Copy&quot; src &quot;to&quot; (str dest-file))
-        (let [s (if-not skip-stencil
-                  (stencil/render-string (slurp src) value-map)
-                  (io/file src))]
-          (io/make-parents dest-file)
-          (io/copy s dest-file)
-          ;(println &quot;hhhhh&quot; s src-file dest-file)
-          [src-file dest-file])))))</pre></td></tr><tr><td class="docs"><p>Remove the files created by executing the resource plugin.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn cleanxxx
-  [src ^java.io.File dest &amp; args]
-  (println &quot;Remove &quot;  (str dest))
-  (when (.exists dest)
-    (.delete dest)
-    (loop [parent (.getParentFile dest)]
-      (when (and parent
-                 (.isDirectory parent)
-                 (not (seq (.list parent))))
-        ;;(println &quot;Delete parent:&quot; parent)
-        (when  (.delete parent)
-          (recur (.getParentFile parent)))))))</pre></td></tr><tr><td class="docs"><p>Dump out the map of values passed to stencil</p>
+  (some #(re-matches % val) regex-seq))</pre></td></tr><tr><td class="docs"><p>Dump out the map of values passed to stencil</p>
 </td><td class="codes"><pre class="brush: clojure">(defn pprint 
   [value-map]
   (pprint/pprint value-map)
@@ -3115,9 +3127,10 @@ files in those directories as a seq.  </p>
 
 <p>Return a FileSpec</p>
 </td><td class="codes"><pre class="brush: clojure">(defn all-file-specs
-  [resource-paths update]
+  [{:keys [resource-paths update] :as project-info}]
+  (verbose-msg project-info &quot;resource-paths&quot; resource-paths)
   (for [[source-path {:keys [target-path]} :as resource-path] resource-paths
-        ^java.io.File file (file-seq (io/file  source-path))
+        ^java.io.File file (file-seq (io/file (verbose-msg project-info &quot;source-path&quot;  source-path)))
         :when (.isFile file)]
     (let [dest-file (dest-from-src source-path target-path file)
           dest (.getPath dest-file)]
@@ -3135,16 +3148,18 @@ files in those directories as a seq.  </p>
                             resource-path)
             [source-path options] resource-path]
         [source-path (merge default-options options)]))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defrecord ProjectInfo [resource-paths target-path value-map includes excludes skip-stencil update])</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defrecord ProjectInfo [resource-paths target-path value-map includes excludes skip-stencil update silent verbose])</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn update-file-spec [skip-stencil {:keys[ src dest] :as file-spec}]
   (let [skip (re-matches-any skip-stencil src)]
     (assoc file-spec :skip skip)))</pre></td></tr><tr><td class="docs"><h2>file spec seq</h2>
 
 <p>Take in a <code>ProjectInfo</code> and return a seq of <code>FileSpec</code></p>
 </td><td class="codes"></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn file-spec-seq [{:keys [resource-paths target-path skip-stencil update] :as project-info}]
-  (-&gt;&gt; (all-file-specs resource-paths update)
+</td><td class="codes"><pre class="brush: clojure">(defn file-spec-seq [{:keys [skip-stencil] :as project-info}]
+  (-&gt;&gt; (all-file-specs project-info)
+       (verbose-msg project-info &quot;all-file-specs&quot;)
        (filter include-file?)
+       (verbose-msg project-info &quot;POST include-file?&quot;)
        (map (partial update-file-spec skip-stencil))))</pre></td></tr><tr><td class="docs"><h2>clean file spec</h2>
 
 <p>Expect a file-spec</p>
@@ -3161,19 +3176,21 @@ files in those directories as a seq.  </p>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>Remove the files created by executing the resource plugin.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn clean-task 
   [project-info]
-  (-&gt;&gt; (file-spec-seq project-info)
-       (map clean-file-spec)))</pre></td></tr><tr><td class="docs"><h2>copy file spec</h2>
+  (every? identity (-&gt;&gt; (file-spec-seq project-info)
+                        (map clean-file-spec))))</pre></td></tr><tr><td class="docs"><h2>copy file spec</h2>
 
 <p>Expect a file-spec
 [src src-file dest resource-path dest-file skip update]</p>
-</td><td class="codes"><pre class="brush: clojure">(defn copy-file-spec [ {:keys[value-map]} {:keys[src src-file dest-file update skip]} ] 
+</td><td class="codes"><pre class="brush: clojure">(defn copy-file-spec [ {:keys[value-map silent] :as project-info} 
+                       {:keys[src src-file dest-file update skip]} ] 
+  (verbose-msg project-info &quot;***** copy-file-spec:&quot; (str &quot;SRC:&quot; src-file &quot;DEST:&quot; dest-file))
   (if (not (.exists src-file))
-    (println &quot;Missing source file:&quot; src)
+    (err-msg &quot;Missing source file:&quot; src)
     (let [dest-ts (.lastModified dest-file)
           src-ts (.lastModified src-file)]
       (when (or (not update)
                 (and update (&lt;  dest-ts src-ts)))
-        (println &quot;Copy&quot; src &quot;to&quot; (str dest-file))
+        (msg project-info &quot;Copy&quot; src &quot;to&quot; (str dest-file))
         (let [s (if-not skip
                   (stencil/render-string (slurp src) value-map)
                   (io/file src))]
@@ -3184,8 +3201,10 @@ files in those directories as a seq.  </p>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>Remove the files created by executing the resource plugin.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn copy-task 
   [project-info]
-  (-&gt;&gt; (file-spec-seq project-info)
-       (map (partial copy-file-spec project-info))))</pre></td></tr><tr><td class="docs"><h2>resource</h2>
+  (println &quot;copy task&quot; &quot;START&quot;)
+  (every? identity (-&gt;&gt; (file-spec-seq project-info)
+                        (verbose-msg project-info &quot;file-spec-seq&quot;)
+                        (map (partial copy-file-spec project-info)))))</pre></td></tr><tr><td class="docs"><h2>resource</h2>
 
 <p>This is the main entry point into the plugin.  It supports 3 tasks:
 copy, clean and pprint.</p>
@@ -3196,10 +3215,12 @@ needs and calls it.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn resource
   [project &amp; task-keys]
   (let [{:keys [resource-paths target-path extra-values excludes includes 
-                skip-stencil update]
+                skip-stencil update silent verbose]
          :or {update false
               excludes []
               includes [#&quot;.*&quot;]
+              silent false
+              verbose false
               skip-stencil []
               target-path (:target-path project)
               resource-paths nil
@@ -3207,7 +3228,8 @@ needs and calls it.</p>
     (let [value-map (merge {} project (plugin-values) (system-properties) extra-values)
           resource-paths (normalize-resource-paths resource-paths includes excludes target-path)
           task-name (first task-keys)
-          project-info (ProjectInfo. resource-paths target-path value-map includes excludes skip-stencil update)]
+          project-info (ProjectInfo. resource-paths target-path value-map includes excludes skip-stencil update silent verbose)]
+      (verbose-msg project-info &quot;project-info&quot; project-info)
       ;;(println &quot;TASK:&quot; task-name)
       (cond
        (= &quot;pprint&quot; task-name) (pprint value-map)
@@ -3215,11 +3237,11 @@ needs and calls it.</p>
        (= &quot;copy&quot; task-name) (copy-task project-info)
        :else (copy-task project-info)))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn compile-hook [task &amp; [project &amp; more-args :as args]]
-  (println &quot;Copying resources...&quot;)
+  (msg (:silent project) &quot;Copying resources...&quot;)
   (resource project)
   (apply task args))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn clean-hook [task &amp; [project &amp; more-args :as args]]
-  (println &quot;Removing copied resources...&quot;)
+  (msg (:silent project) &quot;Removing copied resources...&quot;)
   (resource project &quot;clean&quot;)
   (apply task args))</pre></td></tr><tr><td class="docs"><p>Borrowed from https://github.com/emezeske/lein-cljsbuild/blob/master/plugin/src/leiningen/cljsbuild.clj</p>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>Set up hooks for the plugin. Eventually, this can be changed to just hook,

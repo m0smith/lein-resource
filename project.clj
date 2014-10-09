@@ -1,5 +1,5 @@
 
-(defproject lein-resource "0.3.8-SNAPSHOT" 
+(defproject lein-resource "0.3.9" 
   :description 
   "
 A task that copies the files for the resource-paths to the
@@ -40,7 +40,7 @@ To configure the plugin,add to the project.clj:
                             {
                              :includes []  ;; list of regex
                              :excludes []  ;; list of regex
-                             :target-path "" ;; directory to store files
+                             :target-path \"\" ;; directory to store files
                               }]]
  
          ;; optional default to the global one
@@ -63,6 +63,9 @@ To configure the plugin,add to the project.clj:
          ;; optional - if true, do not echo progress to the screen
          :silent false
    
+         ;; optional - if true, echo lots of debug info
+         :verbose false
+   
          ;; optional - default to nil
          :extra-values 
            { :year 
@@ -83,19 +86,19 @@ To configure the plugin,add to the project.clj:
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.6.0"]
-                 ;[org.clojure/core.cache "0.6.4"]
-                 ;[org.clojure/data.priority-map "0.0.5"]
-                 [bultitude "0.2.6"]  ;; namespace finder
-                 [org.clojure/data.priority-map "0.0.5"]
-                 
                  [stencil "0.3.4" :exclusions [org.clojure/core.cache]]
+                 ;[org.clojure/core.cache "0.6.4"]
+                 [org.clojure/data.priority-map "0.0.4"]
+                 [bultitude "0.2.6"]  ;; namespace finder
+                 ;[org.clojure/data.priority-map "0.0.5"]
+
                  ]
   :profiles { :dev 
              { :dependencies [[org.clojure/core.async "0.1.346.0-17112a-alpha"]
                               [marginalia "0.8.0"] 
                               [org.clojure/test.check "0.5.9"] ;; property testing
                               ]}}
-
+  
             
   :plugins [[lein-pprint "1.1.2"]]
   :scm {:url "git@github.com:m0smith/lein-resource.git"}

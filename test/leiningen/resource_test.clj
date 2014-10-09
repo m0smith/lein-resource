@@ -67,7 +67,8 @@
                                (gen/list gen-regex)]))
 (def gen-excludes (gen/one-of [(gen/return nil) (gen/list gen-regex)]))
 (def gen-skip-stencil (gen/one-of [(gen/return nil) (gen/list gen-regex)]))
-
+(def gen-silent (gen/return false))
+(def gen-verbose (gen/return false))
 
 ;; ## Generate a Source Tree
 ;; * a sub-directory of target/lein-resource/tmp
@@ -144,24 +145,28 @@
 (def gen-project-info
   (gen/fmap  (partial apply ->ProjectInfo)
              (gen/tuple
-              gen-resource-path
+              gen-resource-paths
               gen-target-path
               gen-value-map
               gen-includes
               gen-excludes
               gen-skip-stencil
-              gen-update)))
+              gen-update
+              gen-silent
+              gen-verbose)))
 
 (def gen-project-info-od
   (gen/fmap  (partial apply ->ProjectInfo)
              (gen/tuple
-              gen-resource-path-od
+              gen-resource-paths-od
               gen-dest-tree-root
               gen-value-map
               gen-includes
               gen-excludes
               gen-skip-stencil
-              gen-update)))
+              gen-update
+              gen-silent
+              gen-verbose)))
 
 
 
@@ -303,11 +308,12 @@
   (async/go (async/>! ch source-path) (async/>! ch target-path)))
 
 (def gen-all-file-specs
-  (gen/fmap (fn [args] [(apply all-file-specs args) args])
-            (gen/tuple gen-resource-paths-od gen-update)))
-
+  (gen/fmap (fn [project-info]
+              [(all-file-specs project-info) project-info])
+            gen-project-info-od))
+              
 (ct/defspec test-all-file-specs 50
-  (prop/for-all [[rtnval [resource-paths]] gen-all-file-specs]
+  (prop/for-all [[rtnval {:keys [resource-paths] :as project-info}] gen-all-file-specs]
                 (let [ch (async/chan)]
                   (doseq [ rp resource-paths] (mark-for-deletion ch rp))
                   (is (every? #(instance? leiningen.resource.FileSpec %) rtnval))
@@ -353,7 +359,7 @@
   (prop/for-all [{:keys [dest-file resource-path] :as file-spec} gen-file-spec-od]
                 (let [ch (async/chan)]                
                   (mark-for-deletion ch resource-path)
-                  (copy-file-spec {} file-spec)
+                  (copy-file-spec {:silent true} file-spec)
                   (is (exists? dest-file))
                   (async/go (while true 
                               (delete-file-recursively (async/<! ch)))))))

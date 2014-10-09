@@ -10,5 +10,6 @@
 /target
 .lein-plugins
 .nrepl-port
-
+pom.xml.asc
+.lein*
 
