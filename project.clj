@@ -35,6 +35,13 @@ To configure the plugin,add to the project.clj:
      :resource {
          ;; required or will do nothing
          :resource-paths [\"src-resource\"]
+          OR
+         :resource-paths [ [\"src-resource\" 
+                            {
+                             :includes []  ;; list of regex
+                             :excludes []  ;; list of regex
+                             :target-path "" ;; directory to store files
+                              }]]
  
          ;; optional default to the global one
          :target-path \"target/html\"   
@@ -52,6 +59,9 @@ To configure the plugin,add to the project.clj:
 
          ;; optioan - list of regex of files to skip stencil
          :skip-stencil [ ]
+
+         ;; optional - if true, do not echo progress to the screen
+         :silent false
    
          ;; optional - default to nil
          :extra-values 
@@ -60,7 +70,7 @@ To configure the plugin,add to the project.clj:
                     (java.util.Calendar/YEAR)) }  
 ## Links
 
-### Marginalia
+ ### Marginalia
 
 [Marginalia](http://gdeer81.github.io/marginalia)
 [Markdown](http://daringfireball.net/projects/markdown/syntax)

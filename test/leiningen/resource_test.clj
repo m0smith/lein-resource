@@ -100,7 +100,7 @@
      (io/make-parents root file)
      (spit (io/file root file) content))
   ([file content]
-     (println file)
+     ;;(println file)
      (io/make-parents file)
      (spit (io/file file) content)))
 
@@ -349,7 +349,15 @@
 ;; Properties
 ;; * A file exists in the target    
 
-;; Create a directory with 1 or more files
+(ct/defspec test-copy-file-spec 50
+  (prop/for-all [{:keys [dest-file resource-path] :as file-spec} gen-file-spec-od]
+                (let [ch (async/chan)]                
+                  (mark-for-deletion ch resource-path)
+                  (copy-file-spec {} file-spec)
+                  (is (exists? dest-file))
+                  (async/go (while true 
+                              (delete-file-recursively (async/<! ch)))))))
+
 
 
                 
