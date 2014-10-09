@@ -210,7 +210,7 @@ Return a FileSpec"
 (defn copy-task 
   "Remove the files created by executing the resource plugin."
   [project-info]
-  (println "copy task" "START")
+  (verbose-msg project-info "copy task" "START")
   (every? identity (->> (file-spec-seq project-info)
                         (verbose-msg project-info "file-spec-seq")
                         (map (partial copy-file-spec project-info)))))
