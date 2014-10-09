@@ -90,6 +90,6 @@ To see it in action, see the [Tic Tac Toe project.clj](https://github.com/m0smit
 
 ## License
 
-Copyright &copy; 2012 Matther O. Smith
+Copyright &copy; 2014 Matther O. Smith
 
 Distributed under the Eclipse Public License, the same as Clojure.
