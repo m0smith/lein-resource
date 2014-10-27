@@ -45,6 +45,8 @@
                         (gen/list (gen/not-empty gen/string-alpha-numeric))))
 (def gen-source-path gen-path)
 (def gen-target-path gen-path)
+;; READ WRITE EXECUTE
+(def gen-permissions (gen/tuple gen/boolean gen/boolean gen/boolean))
 
 (def gen-file-content-part 
   (gen/one-of 
@@ -185,8 +187,15 @@
                        gen-skip
                        gen-update)))
 
+
+(defn set-permissions [file  [read write execute]]
+  (.setExecutable file execute)
+  ;(.setReadable file read)
+  (.setWritable file write))
+
+
 (def gen-file-spec-od
-  (gen/fmap (fn [[file dfile resource-path skip update content]] 
+  (gen/fmap (fn [[file dfile resource-path skip update content permissions]] 
               (let [ [root] resource-path
                     src-file (io/file root file)
                     src (.getPath src-file)
@@ -195,13 +204,16 @@
                     dest (.getPath dest-file)
                     ]
                 (make-path-od src-file content)
-                (->FileSpec src src-file dest resource-path dest-file skip update)))
+                (set-permissions src-file permissions)
+                (-> (->FileSpec src src-file dest resource-path dest-file skip update)
+                    (assoc :permissions permissions))))
             (gen/tuple (gen/not-empty gen/string-alpha-numeric)
                        (gen/not-empty gen/string-alpha-numeric)
                        gen-resource-path-od
                        gen-skip
                        gen-update
-                       gen-file-content)))
+                       gen-file-content
+                       gen-permissions)))
 
 (def gen-normalize 
   (gen/fmap (fn [args] [(apply normalize-resource-paths args) args])
@@ -356,11 +368,13 @@
 ;; * A file exists in the target    
 
 (ct/defspec test-copy-file-spec 50
-  (prop/for-all [{:keys [dest-file resource-path] :as file-spec} gen-file-spec-od]
-                (let [ch (async/chan)]                
+  (prop/for-all [{:keys [dest-file src-file resource-path permissions] :as file-spec} gen-file-spec-od]
+                (let [ch (async/chan)
+                      [read write execute] permissions]                
                   (mark-for-deletion ch resource-path)
                   (copy-file-spec {:silent true} file-spec)
                   (is (exists? dest-file))
+                  (is (= execute (.canExecute src-file) (.canExecute dest-file)))
                   (async/go (while true 
                               (delete-file-recursively (async/<! ch)))))))
 

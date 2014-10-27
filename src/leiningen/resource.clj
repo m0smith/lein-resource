@@ -202,6 +202,7 @@ Return a FileSpec"
                   (io/file src))]
           (io/make-parents dest-file)
           (io/copy s dest-file)
+          (.setExecutable dest-file (.canExecute src-file))
           ;(println "hhhhh" s src-file dest-file)
           [src-file dest-file])))))
 
