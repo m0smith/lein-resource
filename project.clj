@@ -1,5 +1,5 @@
 
-(defproject lein-resource "14.10.1" 
+(defproject lein-resource "14.10.2" 
   :description 
   "
 A task that copies the files for the resource-paths to the
@@ -86,7 +86,7 @@ To configure the plugin,add to the project.clj:
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.6.0"]
-                 [stencil "0.3.4" :exclusions [org.clojure/core.cache]]
+                 [stencil "0.3.5" :exclusions [org.clojure/core.cache]]
                  ;[org.clojure/core.cache "0.6.4"]
                  [org.clojure/data.priority-map "0.0.4"]
                  [bultitude "0.2.6"]  ;; namespace finder

@@ -270,7 +270,7 @@
                   (if (= 0 count-path count-target-path)
                     (is (= p sep))
                     (if (= 0 count-path)
-                      (is (= p target-path))
+                      (is (or (= p target-path) (= p (str target-path "\\"))))
                       (let [full-path (str target-path sep path)
                             dup-regex (re-pattern (str "(\\" sep ")+"))]
                         ;(println dup-regex full-path sep p)
