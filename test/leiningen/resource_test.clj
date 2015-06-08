@@ -10,6 +10,7 @@
             [leiningen.resource :refer :all]))
 
 (def sep java.io.File/separator)
+(def os  (System/getProperty "os.name"))
 
 
 ;; Stolen from the old clojure contrib:  
@@ -367,6 +368,11 @@
 ;; Properties
 ;; * A file exists in the target    
 
+(defn executable-os? 
+  "Windows does not support executable on files, so it always sets them to true.  Myabe run this test on Linux to be sure."
+  [f]
+  (or (= "Windows 7" os) f))
+
 (ct/defspec test-copy-file-spec 50
   (prop/for-all [{:keys [dest-file src-file resource-path permissions] :as file-spec} gen-file-spec-od]
                 (let [ch (async/chan)
@@ -374,7 +380,7 @@
                   (mark-for-deletion ch resource-path)
                   (copy-file-spec {:silent true} file-spec)
                   (is (exists? dest-file))
-                  (is (= execute (.canExecute src-file) (.canExecute dest-file)))
+                  (is (= (executable-os? execute) (.canExecute src-file) (.canExecute dest-file)))
                   (async/go (while true 
                               (delete-file-recursively (async/<! ch)))))))
 
