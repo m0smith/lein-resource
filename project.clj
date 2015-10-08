@@ -1,5 +1,5 @@
 
-(defproject lein-resource "14.10.2" 
+(defproject lein-resource "15.10.1" 
   :description 
   "
 A task that copies the files for the resource-paths to the
@@ -85,18 +85,18 @@ To configure the plugin,add to the project.clj:
 "
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.6.0"]
-                 [stencil "0.3.5" :exclusions [org.clojure/core.cache]]
-                 ;[org.clojure/core.cache "0.6.4"]
-                 [org.clojure/data.priority-map "0.0.4"]
-                 [bultitude "0.2.6"]  ;; namespace finder
+  :dependencies [
+                 [stencil "0.5.0" :exclusions [org.clojure/core.cache org.clojure/clojure]]
+                 ;[org.clojure/core.cache "0.6.4" :exclusions [org.clojure/clojure]]
+                 ;[org.clojure/data.priority-map "0.0.7"]
+                 [bultitude "0.2.6" :exclusions [org.clojure/clojure]]  ;; namespace finder
                  ;[org.clojure/data.priority-map "0.0.5"]
 
                  ]
   :profiles { :dev 
-             { :dependencies [[org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                              [marginalia "0.8.0"] 
-                              [org.clojure/test.check "0.5.9"] ;; property testing
+             { :dependencies [[org.clojure/core.async "0.1.346.0-17112a-alpha" :exclusions [org.clojure/clojure]]
+                              [marginalia "0.8.0" :exclusions [org.clojure/clojure]] 
+                              [org.clojure/test.check "0.8.2" :exclusions [org.clojure/clojure]] ;; property testing
                               ]}}
   
             

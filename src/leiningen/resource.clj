@@ -1,6 +1,7 @@
  (ns leiningen.resource
   (:require [clojure.java.io :as io]
             [clojure.pprint :as pprint]
+            [stencil.loader]
             [stencil.core :as stencil]
             [leiningen.compile :as lcompile]
             [leiningen.clean :as lclean]
@@ -226,6 +227,7 @@ Return a FileSpec"
 (defn resource
   "Task name can also be pprint or clean"
   [project & task-keys]
+  (stencil.loader/set-cache {})
   (let [{:keys [resource-paths target-path extra-values excludes includes 
                 skip-stencil update silent verbose]
          :or {update false
