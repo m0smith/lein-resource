@@ -2,7 +2,7 @@
 
 A plugin that can be used to copy files from mulitple source
 directories to a target directory while maintaining the subdirecotries.  Also, each file
-will be transformed using [stencil](https://github.com/davidsantiago/stencil).  The map 
+will by default be transformed using [stencil](https://github.com/davidsantiago/stencil).  The map 
 that is passed to stencil contains a combination of:
 
 * The project map
@@ -14,7 +14,7 @@ that is passed to stencil contains a combination of:
 
 To use from Leiningen add to `project.clj`:
 ```clojure
-:plugins [ [lein-resource "14.10.2"] ] 
+:plugins [ [lein-resource "15.10.1"] ] 
 ```
 To have it run before the jar file creation:
 ```clojure
