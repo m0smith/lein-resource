@@ -1,5 +1,5 @@
 
-(defproject lein-resource "15.10.1" 
+(defproject lein-resource "15.10.2" 
   :description 
   "
 A task that copies the files for the resource-paths to the
@@ -20,6 +20,12 @@ Remove the files created by the plugin.
 
      lein resource clean 
 
+
+###  Print
+Print the value of a stencil specified as an argument, useful for build scripts
+
+     lein resource print  \"{{version}}\"
+     export MY_PROJECT_VERSION=$(lein resource print \"{{name}}:{{version}}\")
 
 ### Pretty Print
 Dump the map of values sent to stencil.

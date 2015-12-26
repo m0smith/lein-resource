@@ -14,7 +14,7 @@ that is passed to stencil contains a combination of:
 
 To use from Leiningen add to `project.clj`:
 ```clojure
-:plugins [ [lein-resource "15.10.1"] ] 
+:plugins [ [lein-resource "15.10.2"] ] 
 ```
 To have it run before the jar file creation:
 ```clojure
@@ -59,6 +59,13 @@ To run to plugin directly simply enter
 To see all the properties that are passed to stencil:
 
     lein resource pprint
+
+
+To print the value of a stencil passed as an argument (useful for build scripts & testing templates)
+
+     lein resource print  "{{version}}"
+     export MY_PROJECT_VERSION=$(lein resource print "{{name}}:{{version}}")
+
 
 To delete all the copied files and empty directories:
 
