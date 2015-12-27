@@ -96,7 +96,7 @@ To see it in action, see the [Tic Tac Toe project.clj](https://github.com/m0smit
 
 ## Contributors
 * Matthew O. Smith - original developer
-* Cameron Dorrat - added the (print task)[https://github.com/m0smith/lein-resource/pull/17]
+* Cameron Dorrat - added the [print task](https://github.com/m0smith/lein-resource/pull/17)
 
 ## License
 
