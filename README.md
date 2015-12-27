@@ -94,6 +94,9 @@ A file that uses this plugin would contain:
 
 To see it in action, see the [Tic Tac Toe project.clj](https://github.com/m0smith/tic-tac-toe/blob/master/project.clj)
 
+## Contributors
+* Matthew O. Smith - original developer
+* Cameron Dorrat - added the print task
 
 ## License
 
