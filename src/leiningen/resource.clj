@@ -217,15 +217,19 @@ Return a FileSpec"
                         (verbose-msg project-info "file-spec-seq")
                         (map (partial copy-file-spec project-info)))))
 
+(defn print-task [value-map patterns]
+  (doseq [patt patterns]
+    (println (stencil/render-string patt value-map))))
+
 ;; ## resource
-;; This is the main entry point into the plugin.  It supports 3 tasks:
-;; copy, clean and pprint.
+;; This is the main entry point into the plugin.  It supports 4 tasks:
+;; copy, clean, print and pprint.
 ;;
 ;; This function creates the `ProjectInfo`, determines which task is
 ;; needs and calls it.
 
 (defn resource
-  "Task name can also be pprint or clean"
+  "Task name can also be print, pprint or clean"
   [project & task-keys]
   (stencil.loader/set-cache {})
   (let [{:keys [resource-paths target-path extra-values excludes includes 
@@ -245,11 +249,12 @@ Return a FileSpec"
           project-info (ProjectInfo. resource-paths target-path value-map includes excludes skip-stencil update silent verbose)]
       (verbose-msg project-info "project-info" project-info)
       ;;(println "TASK:" task-name)
-      (cond
-       (= "pprint" task-name) (pprint value-map)
-       (= "clean" task-name) (clean-task project-info)
-       (= "copy" task-name) (copy-task project-info)
-       :else (copy-task project-info)))))
+      (condp = task-name
+       "print" (print-task value-map (rest task-keys))
+       "pprint" (pprint value-map)
+       "clean" (clean-task project-info)
+       "copy" (copy-task project-info)
+       (copy-task project-info)))))
 
 (defn compile-hook [task & [project & more-args :as args]]
   (msg (:silent project) "Copying resources...")

@@ -29,3 +29,9 @@
 (deftest test-pprint
   (let [^String r (with-out-str (resource project "pprint"))]
     (is (.contains r (str mykey)))))
+
+(deftest test-print
+  (let [out-str (with-out-str (resource project "print" "{{resource.target-path}}={{resource.extra-values.key}}"))
+        expected (str (get-in project [:resource :target-path]) "="
+                      (get-in project [:resource :extra-values mykey]) "\n")]
+    (is (= expected out-str))))
