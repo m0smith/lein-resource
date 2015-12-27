@@ -96,7 +96,11 @@ To see it in action, see the [Tic Tac Toe project.clj](https://github.com/m0smit
 
 ## Contributors
 * Matthew O. Smith - original developer
+* Kevin Bell - added [skip-stencil option](https://github.com/m0smith/lein-resource/pull/6)
+* Jim Crossley- [only log when copy occurs](https://github.com/m0smith/lein-resource/pull/10)
 * Cameron Dorrat - added the [print task](https://github.com/m0smith/lein-resource/pull/17)
+
+To contribute, create a pull request.  Be sure to include unit tests for changes.
 
 ## License
 
