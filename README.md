@@ -104,6 +104,6 @@ To contribute, create a pull request.  Be sure to include unit tests for changes
 
 ## License
 
-Copyright &copy; 2014 Matther O. Smith
+Copyright &copy; 2015 Matther O. Smith
 
 Distributed under the Eclipse Public License, the same as Clojure.
