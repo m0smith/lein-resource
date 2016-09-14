@@ -1,4 +1,4 @@
 language: clojure
-lein: lein
+lein: 2.7.0
 before_script: lein show-profiles
 script: lein test
