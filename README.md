@@ -1,5 +1,7 @@
 # lein-resource
 
+[![Build Status](https://travis-ci.org/m0smith/lein-resource.svg?branch=master)](https://travis-ci.org/m0smith/lein-resource)
+
 A plugin that can be used to copy files from mulitple source
 directories to a target directory while maintaining the subdirecotries.  Also, each file
 will by default be transformed using [stencil](https://github.com/davidsantiago/stencil).  The map 
