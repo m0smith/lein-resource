@@ -369,9 +369,12 @@
 ;; * A file exists in the target    
 
 (defn executable-os? 
-  "Windows does not support executable on files, so it always sets them to true.  Myabe run this test on Linux to be sure."
-  [f]
-  (or (= "Windows 7" os) f))
+  "Windows does not support executable on files, so it always sets
+  them to true.  Maybe run this test on Linux to be sure."
+  [perm]
+  (or (= "Windows 7" os)
+      (= "Windows 10" os)
+      perm))
 
 (ct/defspec test-copy-file-spec 50
   (prop/for-all [{:keys [dest-file src-file resource-path permissions] :as file-spec} gen-file-spec-od]

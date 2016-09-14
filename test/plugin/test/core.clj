@@ -3,6 +3,8 @@
   (:use [leiningen.resource])
   (:use [clojure.test]))
 
+(def eol (System/getProperty "line.separator"))
+
 (def myval "value")
 (def mykey :key)
 
@@ -33,5 +35,5 @@
 (deftest test-print
   (let [out-str (with-out-str (resource project "print" "{{resource.target-path}}={{resource.extra-values.key}}"))
         expected (str (get-in project [:resource :target-path]) "="
-                      (get-in project [:resource :extra-values mykey]) "\n")]
+                      (get-in project [:resource :extra-values mykey]) eol)]
     (is (= expected out-str))))

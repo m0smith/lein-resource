@@ -1,5 +1,5 @@
 
-(defproject lein-resource "15.10.2" 
+(defproject lein-resource "16.9.1" 
   :description 
   "
 A task that copies the files for the resource-paths to the
@@ -95,14 +95,14 @@ To configure the plugin,add to the project.clj:
                  [stencil "0.5.0" :exclusions [org.clojure/core.cache org.clojure/clojure]]
                  ;[org.clojure/core.cache "0.6.4" :exclusions [org.clojure/clojure]]
                  ;[org.clojure/data.priority-map "0.0.7"]
-                 [bultitude "0.2.6" :exclusions [org.clojure/clojure]]  ;; namespace finder
+                 [bultitude "0.2.8" :exclusions [org.clojure/clojure]]  ;; namespace finder
                  ;[org.clojure/data.priority-map "0.0.5"]
 
                  ]
   :profiles { :dev 
-             { :dependencies [[org.clojure/core.async "0.1.346.0-17112a-alpha" :exclusions [org.clojure/clojure]]
-                              [marginalia "0.8.0" :exclusions [org.clojure/clojure]] 
-                              [org.clojure/test.check "0.8.2" :exclusions [org.clojure/clojure]] ;; property testing
+             { :dependencies [[org.clojure/core.async "0.2.385" :exclusions [org.clojure/clojure]]
+                              [michaelblume/marginalia "0.9.0" :exclusions [org.clojure/clojure]] 
+                              [org.clojure/test.check "0.9.0" :exclusions [org.clojure/clojure]] ;; property testing
                               ]}}
   
             
