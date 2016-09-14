@@ -388,6 +388,19 @@
                               (delete-file-recursively (async/<! ch)))))))
 
 
+;;
+;; gh-16 add better validation for resource paths
+;;
+(ct/defspec test-gh-16-report-malformed-resource-path 50
+  (prop/for-all [bad-resource-paths (gen/list gen-resource-path)]
+                (if (>= 0 (count bad-resource-paths))
+                  :true
+                  (let [normalized  (normalize-resource-paths (flatten bad-resource-paths) nil nil nil)]
+                    (try
+                      (count normalized)
+                      nil
+                      (catch clojure.lang.ExceptionInfo ex :true))))))
+                      
 
                 
    

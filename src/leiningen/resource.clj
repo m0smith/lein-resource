@@ -135,15 +135,20 @@ Return a FileSpec"
 ;;
 ;;    [ "src" {:includes [] :excludes [] :target-path "target"} ]
 
+(defn normalize-resource-path [path]
+  (cond
+    (string? path) [ path {} ]
+    (and (vector? path) (= 2 (count path))) path
+    :else (throw (ex-info
+                  "Malformed :resource-paths. The element must either be a string or a 2 element vector" {:element path}))))
+
 (defn normalize-resource-paths 
   "Resource paths can be passed as strings or as vectors of 2
   elements: the source path and the options.  Convert the former to the latter."
   [resource-paths includes excludes target-path]
   (let [default-options {:includes includes :excludes excludes :target-path target-path}]
     (for [resource-path resource-paths]
-      (let [resource-path (if (string? resource-path) 
-                            [ resource-path {} ]
-                            resource-path)
+      (let [resource-path (normalize-resource-path resource-path)
             [source-path options] resource-path]
         [source-path (merge default-options options)]))))
 
