@@ -1,5 +1,5 @@
 
-(defproject lein-resource "16.9.1" 
+(defproject lein-resource "16.9.2-SNAPSHOT" 
   :description 
   "
 A task that copies the files for the resource-paths to the
