@@ -70,6 +70,7 @@
   (for [ [key value] (System/getProperties)]
     [(name-to-key key) value ]))
 
+
 (defn- assoc-in-from-vector [m [keyvec val]]
   (let [keyvec (conj keyvec :prop)
         rtnval (assoc-in m keyvec  val)]
@@ -78,6 +79,7 @@
 (defn- system-properties "Load in the system properties.  Convert . to nested maps"
   []
   (reduce assoc-in-from-vector {} (system-properties-seq)))
+
 
 (defn re-matches-any [regex-seq val]
   (some #(re-matches % val) regex-seq))
@@ -97,7 +99,7 @@
 ;; skip - if true, do not pass the file through stencil
 ;; update - if true, only copy more recent files
 
-(defrecord FileSpec [src src-file dest resource-path dest-file skip update])
+(defrecord FileSpec [src src-file dest resource-path dest-file skip update extra-values])
 
 (defn include-file? 
   "Take a FileSpec and check if that file should be included.  
@@ -121,12 +123,12 @@ Return a FileSpec"
 
   [{:keys [resource-paths update] :as project-info}]
   (verbose-msg project-info "resource-paths" resource-paths)
-  (for [[source-path {:keys [target-path]} :as resource-path] resource-paths
-        ^java.io.File file (file-seq (io/file (verbose-msg project-info "source-path"  source-path)))
+  (for [[source-path {:keys [target-path extra-values]} :as resource-path] resource-paths
+          ^java.io.File file (file-seq (io/file (verbose-msg project-info "source-path"  source-path)))
         :when (.isFile file)]
     (let [dest-file (dest-from-src source-path target-path file)
           dest (.getPath dest-file)]
-      (FileSpec.  (.getPath file) file dest resource-path dest-file false update))))
+      (FileSpec.  (.getPath file) file dest resource-path dest-file false update extra-values))))
 
 
 
@@ -194,7 +196,7 @@ Return a FileSpec"
 ;; Expect a file-spec
 ;[src src-file dest resource-path dest-file skip update]
 (defn copy-file-spec [ {:keys[value-map silent] :as project-info} 
-                       {:keys[src src-file dest-file update skip]} ] 
+                       {:keys[src src-file dest-file update skip extra-values]} ] 
   (verbose-msg project-info "***** copy-file-spec:" (str "SRC:" src-file "DEST:" dest-file))
   (if (not (.exists src-file))
     (err-msg "Missing source file:" src)
@@ -204,8 +206,10 @@ Return a FileSpec"
                 (and update (<  dest-ts src-ts)))
         (msg project-info "Copy" src "to" (str dest-file))
         (let [s (if-not skip
-                  (stencil/render-string (slurp src) value-map)
+                  (stencil/render-string (slurp src) (merge {} value-map extra-values))
                   (io/file src))]
+          ;;(println "skip" skip "merged" value-map extra-values)
+
           (io/make-parents dest-file)
           (io/copy s dest-file)
           (.setExecutable dest-file (.canExecute src-file))

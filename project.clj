@@ -1,5 +1,4 @@
-
-(defproject lein-resource "16.9.2-SNAPSHOT" 
+(defproject lein-resource "16.11.1" 
   :description 
   "
 A task that copies the files for the resource-paths to the
@@ -47,6 +46,8 @@ To configure the plugin,add to the project.clj:
                              :includes []  ;; list of regex
                              :excludes []  ;; list of regex
                              :target-path \"\" ;; directory to store files
+                             :extra-values {} ;; override the top level 
+                                              ;; values for this resource
                               }]]
  
          ;; optional default to the global one
@@ -63,7 +64,7 @@ To configure the plugin,add to the project.clj:
          ;; which is en empty vector
          :excludes [ #\".*~\" ]
 
-         ;; optioan - list of regex of files to skip stencil
+         ;; optional - list of regex of files to skip stencil
          :skip-stencil [ ]
 
          ;; optional - if true, do not echo progress to the screen
@@ -79,7 +80,7 @@ To configure the plugin,add to the project.clj:
                     (java.util.Calendar/YEAR)) }  
 ## Links
 
- ### Marginalia
+### Marginalia
 
 [Marginalia](http://gdeer81.github.io/marginalia)
 [Markdown](http://daringfireball.net/projects/markdown/syntax)
@@ -93,20 +94,24 @@ To configure the plugin,add to the project.clj:
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [
                  [stencil "0.5.0" :exclusions [org.clojure/core.cache org.clojure/clojure]]
-                 ;[org.clojure/core.cache "0.6.4" :exclusions [org.clojure/clojure]]
-                 ;[org.clojure/data.priority-map "0.0.7"]
+                 
+                 
                  [bultitude "0.2.8" :exclusions [org.clojure/clojure]]  ;; namespace finder
-                 ;[org.clojure/data.priority-map "0.0.5"]
-
+                 
+                 ;[org.clojure/clojure "1.9.0-alpha13"]
+                 ;[org.clojure/clojure "1.7.0"]
                  ]
-  :profiles { :dev 
-             { :dependencies [[org.clojure/core.async "0.2.385" :exclusions [org.clojure/clojure]]
-                              [michaelblume/marginalia "0.9.0" :exclusions [org.clojure/clojure]] 
-                              [org.clojure/test.check "0.9.0" :exclusions [org.clojure/clojure]] ;; property testing
+  :profiles
+  {
+   :dev 
+   { :dependencies [[org.clojure/core.async "0.2.385" :exclusions [org.clojure/clojure]]
+                    [michaelblume/marginalia "0.9.0" :exclusions [org.clojure/clojure]] 
+                    [org.clojure/test.check "0.9.0" :exclusions [org.clojure/clojure]] ;; property testing
+      
                               ]}}
   
             
-  :plugins [[lein-pprint "1.1.2"]]
+  :plugins [[lein-pprint "1.1.2" :exclusions [org.clojure/clojure]]]
   :scm {:url "git@github.com:m0smith/lein-resource.git"}
   :url "https://github.com/m0smith/lein-resource"
   :eval-in-leiningen true

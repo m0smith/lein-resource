@@ -10,7 +10,13 @@
 
 (def project
   {
-   :resource  {:resource-paths ["test-resources/test1"]
+   :resource  {:resource-paths [
+                                "test-resources/test1"
+                                ["test-resources/test1" {:extra-values {:key "DEV"}
+                                                         :target-path "target/test1-DEV"}]
+                                ["test-resources/test1" {:extra-values {:key "PROD"}
+                                                         :target-path "target/test1-PROD"}]
+                                ]
                :target-path "target/test1"
                :excludes [#".*~"]
                :extra-values { mykey myval }}})
@@ -23,10 +29,17 @@
                :extra-values { mykey myval }}})
 
 (deftest test-paths
-  (resource project))
+  (resource project)
+  (is (.startsWith (slurp "target/test1/subdir/test.txt") myval))
+  (is (.startsWith (slurp "target/test1-DEV/subdir/test.txt") "DEV"))
+  (is (.startsWith (slurp "target/test1-PROD/subdir/test.txt") "PROD")))
+
 
 (deftest test-clean
-  (resource project "clean"))
+  (resource project "clean")
+  (is (not (.exists (io/file "target/test1/subdir/test.txt"))))
+  (is (not (.exists (io/file "target/test1-DEV/subdir/test.txt"))))
+  (is (not (.exists (io/file "target/test1-PROD/subdir/test.txt")))))
 
 (deftest test-pprint
   (let [^String r (with-out-str (resource project "pprint"))]

@@ -37,6 +37,8 @@ To configure lein-resource, add to `project.clj`
                       :includes []  ;; list of regex
                       :excludes []  ;; list of regex
                       :target-path "" ;; directory to store files
+                      :extra-values {} ;; override the top level
+		                       ;; values for this resource		      
                     }]]
 
   :target-path "target/html" ;; optional default to the global one

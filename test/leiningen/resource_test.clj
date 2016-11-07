@@ -9,23 +9,27 @@
             [clojure.core.async :as async ]
             [leiningen.resource :refer :all]))
 
+
 (def sep java.io.File/separator)
 (def os  (System/getProperty "os.name"))
 
 
-;; Stolen from the old clojure contrib:  
-;; It was left out of clojure.java.io because in Java 6 there's no way to
-;; detect whether a given directory is actually a symlink, so it has to
-;; recurse into symlinked directories indiscriminately. This behaviour is
-;; arguably dangerous. Perhaps in the far future it could be added once
-;; support for Java 6 is dropped.
-;;
-;; Not generating symlinks so it is safe in this context
 
 
 (defn delete-file-recursively
   "Delete file f. If it's a directory, recursively delete all its contents.
-  Raise an exception if any deletion fails unless silently is true."
+  Raise an exception if any deletion fails unless silently is true.
+
+ Stolen from the old clojure contrib:  
+    It was left out of clojure.java.io because in Java 6 there's no way to
+    detect whether a given directory is actually a symlink, so it has to
+    recurse into symlinked directories indiscriminately. This behaviour is
+    arguably dangerous. Perhaps in the far future it could be added once
+    support for Java 6 is dropped.
+
+ Not generating symlinks so it is safe in this context
+
+"
   [f & [silently]]
   (let [f (io/file f)]
     (if (.isDirectory f)
@@ -37,7 +41,31 @@
 
 (defn gen-nil-less-map [m] (gen/fmap (fn [f] (into {} (remove (comp nil? second) f))) m))
 
-(def gen-value-map (gen/return {}))
+(def extra-value-keys [:a :b :c :d :e :f :g :h :i :j :k :V1 :V2])
+
+(defn extra-value-keys-names []
+  (mapv str extra-value-keys))
+
+
+(defn extra-value-keys-template []
+  (mapv #(str "[[" % "={{" (name %) "}}]]") extra-value-keys))
+
+(def gen-extra-value-key (gen/elements extra-value-keys))
+
+(def gen-extra-value-key-name
+  (gen/fmap str gen-extra-value-key))
+
+(def gen-extra-value-key-content-part
+  (gen/fmap #(vector (str "[[" % "={{" (name %) "}}]]") [%]) gen-extra-value-key))
+
+(def gen-value-map
+  
+  (gen/one-of [
+               (gen/fmap #(into {} (map vector extra-value-keys %))
+                         (gen/vector gen/string-alphanumeric (count extra-value-keys)))
+               ]))
+
+                                          
 (def gen-update (gen/return false))
 (def gen-regex (gen/elements [ #"^.*~$" #".html$" #".css$" #".xml$"]))
 (def gen-extension (gen/elements [ "~" ".html" ".css" ".xml"]))
@@ -49,14 +77,22 @@
 ;; READ WRITE EXECUTE
 (def gen-permissions (gen/tuple gen/boolean gen/boolean gen/boolean))
 
-(def gen-file-content-part 
+(def gen-file-content-part
+  "A generator for file contents.  Returns
+[content vector-of-extra-value-keys]."
   (gen/one-of 
    [
-    (gen/elements [ "STUFF" " " \tab \newline "HAMSTER" "{{V1}}" "{{V2}}"])
-    gen/string]))
+    (gen/fmap #(vector % []) (gen/elements  [ "STUFF" " " \tab \newline "HAMSTER"]))
+    gen-extra-value-key-content-part]))
+
+(defn combine-file-parts* [[c1 v1][c2 v2]]
+  [ (str c1 c2) (into v1 v2)])
+
+(defn combine-file-parts [parts]
+  (reduce combine-file-parts* parts))
    
 (def gen-file-content
-  (gen/fmap (partial apply str)
+  (gen/fmap #(reduce combine-file-parts* %)
             (gen/not-empty (gen/list gen-file-content-part))))
 
 (def gen-file-name 
@@ -99,17 +135,19 @@
 
 
 (defn make-path-od 
-  ([root file ext content] (make-path-od root (str file ext) content))
-  ([root file content]
+  ([root file ext content]
+   (make-path-od root (str file ext) content))
+  ([root file [content extra-keys]]
      (io/make-parents root file)
-     (spit (io/file root file) content))
-  ([file content]
+     (spit (io/file root file) (str extra-keys content)))
+  ([file [content extra-keys]]
      ;;(println file)
      (io/make-parents file)
-     (spit (io/file file) content)))
+     (spit (io/file file) (str extra-keys content))))
 
 (def gen-source-tree
   (gen/fmap (fn [[root files]]
+              
               (doseq[[f ext content] files]
                 (make-path-od root f ext content))
               root)
@@ -136,6 +174,7 @@
 (def gen-options-od (gen-nil-less-map 
                      (gen/hash-map :includes gen-includes
                                    :excludes gen-excludes
+                                   :extra-values (gen/one-of [gen-value-map (gen/return nil)])
                                    :target-path gen-dest-tree-root)))
 
 (def gen-resource-path-od (gen/tuple gen-source-tree gen-options-od))
@@ -173,20 +212,22 @@
 
 
 
-;;  FileSpec [src src-file dest resource-path dest-file skip update])
+;;  FileSpec [src src-file dest resource-path dest-file skip update extra-values])
 ;;
 (def gen-file-spec 
-  (gen/fmap (fn [[src resource-path skip update]] 
+  (gen/fmap (fn [[src resource-path skip update extra-values]] 
               (let [src-file (io/file src)
                     [_ {:keys [target-path]}] resource-path
                     dest target-path
                     dest-file (io/file dest)
                     ]
-                (->FileSpec src src-file dest resource-path dest-file skip update)))
+                ;;(println "Extra-Values 1" extra-values)
+                (->FileSpec src src-file dest resource-path dest-file skip update extra-values)))
             (gen/tuple gen-source-path 
                        gen-resource-path
                        gen-skip
-                       gen-update)))
+                       gen-update
+                       gen-value-map)))
 
 
 (defn set-permissions [file  [read write execute]]
@@ -196,7 +237,7 @@
 
 
 (def gen-file-spec-od
-  (gen/fmap (fn [[file dfile resource-path skip update content permissions]] 
+  (gen/fmap (fn [[file dfile resource-path skip update content permissions extra-values]] 
               (let [ [root] resource-path
                     src-file (io/file root file)
                     src (.getPath src-file)
@@ -206,7 +247,8 @@
                     ]
                 (make-path-od src-file content)
                 (set-permissions src-file permissions)
-                (-> (->FileSpec src src-file dest resource-path dest-file skip update)
+                ;;(println "Extra-Values 2" extra-values)
+                (-> (->FileSpec src src-file dest resource-path dest-file skip update extra-values)
                     (assoc :permissions permissions))))
             (gen/tuple (gen/not-empty gen/string-alpha-numeric)
                        (gen/not-empty gen/string-alpha-numeric)
@@ -214,7 +256,8 @@
                        gen-skip
                        gen-update
                        gen-file-content
-                       gen-permissions)))
+                       gen-permissions
+                       gen-value-map)))
 
 (def gen-normalize 
   (gen/fmap (fn [args] [(apply normalize-resource-paths args) args])
@@ -317,7 +360,12 @@
      (is (starts-with  dest target-path))
      )))
 
-(defn mark-for-deletion [ch [source-path {:keys [target-path]}]]
+(defn mark-for-deletion
+  "Add the source path and destination path to the channel.  Later,
+  somthing will need to actually go through the channel and delete the
+  files.  "
+  [ch [source-path {:keys [target-path]}]]
+ 
   (async/go (async/>! ch source-path) (async/>! ch target-path)))
 
 (def gen-all-file-specs
@@ -377,7 +425,7 @@
       perm))
 
 (ct/defspec test-copy-file-spec 50
-  (prop/for-all [{:keys [dest-file src-file resource-path permissions] :as file-spec} gen-file-spec-od]
+  (prop/for-all [{:keys [dest-file src-file resource-path permissions extra-values] :as file-spec} gen-file-spec-od]
                 (let [ch (async/chan)
                       [read write execute] permissions]                
                   (mark-for-deletion ch resource-path)
@@ -402,7 +450,30 @@
                       (catch clojure.lang.ExceptionInfo ex :true))))))
                       
 
-                
-   
-   
+;;
+;; gh-22 check that extra values in resources are supported
+;;  Verify that when extra values are added to a resource path, they are respected.
+;;
+;; The  first element of the content is a vector of keys used in the content.
+;;
+(ct/defspec test-gh-22-support-extra-values-in-specific-targets 20
+  (prop/for-all [[file-specs {:keys [resource-paths value-map] :as project-info}] gen-all-file-specs]
+                (let [ch (async/chan)]
+                  (doseq [ rp resource-paths] (mark-for-deletion ch rp))
+                  
+                  (is (every? #(instance? leiningen.resource.FileSpec %) file-specs))
+                  (is (every? file-spec-consistant? file-specs))
+
+
+                  (doseq [{:keys [extra-values dest-file] :as file-spec} file-specs]
+                    (let [value-map (merge {} value-map extra-values)]
+                      (copy-file-spec (merge project-info {:silent true}) file-spec)
+                      (let [content (slurp (io/file dest-file))
+                            keys (read-string content)]
+                        (doseq [key keys]
+                          (let [v (str "[[" key "=" (get value-map key) "]]")]
+                            (is (.contains content v)))))))
+                  ;; Delete the temporary files
+                  (async/go (while true 
+                              (delete-file-recursively (async/<! ch)))))))
 
