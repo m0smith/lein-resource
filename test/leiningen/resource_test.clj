@@ -404,10 +404,10 @@
 (ct/defspec test-clean-file-spec 50
   (prop/for-all [files gen-files-for-clean-file-spec]
     (and (every? identity
-                 (for [[root file :as args] files]
-                   (let [dest-file (io/file root file)]
-                     (clean-file-spec {:dest-file dest-file})        
-                     (is (not (.exists dest-file))))))
+                 (doall (for [[root file :as args] files]
+                          (let [dest-file (io/file root file)]
+                            (clean-file-spec {:dest-file dest-file})        
+                            (is (not (.exists dest-file)) (str dest-file " still exists"))))))
          (let [dest-file (apply io/file (first files))
                parent (.getParentFile dest-file)]
            (is (not (.exists parent)))))))
@@ -431,7 +431,9 @@
                   (mark-for-deletion ch resource-path)
                   (copy-file-spec {:silent true} file-spec)
                   (is (exists? dest-file))
-                  (is (= (executable-os? execute) (.canExecute src-file) (.canExecute dest-file)))
+                  (is (if (executable-os? execute)
+                        (and (.canExecute src-file) (.canExecute dest-file))
+                        true))
                   (async/go (while true 
                               (delete-file-recursively (async/<! ch)))))))
 

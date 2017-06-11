@@ -189,8 +189,8 @@ Return a FileSpec"
 (defn clean-task 
   "Remove the files created by executing the resource plugin."
   [project-info]
-  (every? identity (->> (file-spec-seq project-info)
-                        (map clean-file-spec))))
+  (every? identity (doall (->> (file-spec-seq project-info)
+                               (map clean-file-spec)))))
 
 ;; ## copy file spec
 ;; Expect a file-spec
@@ -222,9 +222,9 @@ Return a FileSpec"
   "Remove the files created by executing the resource plugin."
   [project-info]
   (verbose-msg project-info "copy task" "START")
-  (every? identity (->> (file-spec-seq project-info)
-                        (verbose-msg project-info "file-spec-seq")
-                        (map (partial copy-file-spec project-info)))))
+  (every? identity (doall(->> (file-spec-seq project-info)
+                              (verbose-msg project-info "file-spec-seq")
+                              (map (partial copy-file-spec project-info))))))
 
 (defn print-task [value-map patterns]
   (doseq [patt patterns]

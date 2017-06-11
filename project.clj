@@ -1,4 +1,4 @@
-(defproject lein-resource "16.11.1" 
+(defproject lein-resource "17.06.1" 
   :description 
   "
 A task that copies the files for the resource-paths to the
